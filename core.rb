@@ -70,7 +70,12 @@ class CPU
               e[:addr] = @@self.DS * 16 + disp
               e[:sign] = "[0%04xH]" % disp
             else
-              e[:addr] = @@self.DS * 16
+              # TODO: explain for base address
+              e[:addr] = if @@rm_tab[rm].include? "BP"
+                @@self.SS * 16
+              else
+                @@self.DS * 16
+              end
               e[:sign] = @@rm_tab[rm].map { |el|
                 r = self.reg(el)
                 e[:addr] += r.data
