@@ -114,12 +114,6 @@ def show_memory(start=0)
 end
 
 def show_code
-  str = ""
-  # strlist = ((@cpu.CS * 16 + @cpu.PC - 3)..(@cpu.CS * 16 + @cpu.PC + 40)).map { |e|
-  #   c = @cpu.memory[e]
-  #   c = c ? c % 0x100 : 0
-  #   ("%s%04x %02x %08b" % [((@cpu.CS * 16 + @cpu.PC == e) ? ">" : ( (@cpu.CS * 16 + (@cpu.pos ? @cpu.pos : 0) == e) ? "-" : " ")),e,c,c])
-  # }
   strlist = @cpu.codeparse.map { |e|
     if e[1]
       "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]

@@ -262,7 +262,7 @@ class CPU
         end
       end
       if flag
-        code = self.instance_exec *(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act]
+        code = self.instance_exec(*(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act])
         return [pos, *code]
       end
     end
