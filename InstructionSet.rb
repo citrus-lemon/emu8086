@@ -50,7 +50,6 @@ instruction_define "1000 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
-
 instruction_define "1100 011w {mod} 000 {rm}" do |w,mod,rm|
   # Immediate to Register/Memory
   obj = @DataEle.r_mem(mod,rm,w)
@@ -58,7 +57,6 @@ instruction_define "1100 011w {mod} 000 {rm}" do |w,mod,rm|
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
-
 instruction_define "1011 w{reg}" do |w,reg|
   # Immediate to Register
   obj = @DataEle.reg(reg,w)
@@ -66,16 +64,14 @@ instruction_define "1011 w{reg}" do |w,reg|
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
-
 instruction_define "1010 00dw" do |d,w|
   # Memory to/from Accumulator
   obj = @DataEle.reg("AX")
-  src = @DataEle.mem(fetchw)
+  src = @DataEle.mem(fetchw,"DS",w)
   (temp = obj; obj = src; src = temp) if d == 1
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
-
 instruction_define "1000 11d0 {mod} 0 {seg} {rm}" do |d,mod,seg,rm|
   # Register/Memory from/to Segment Register
   obj = @DataEle.r_mem(mod,rm,1)
@@ -85,10 +81,83 @@ instruction_define "1000 11d0 {mod} 0 {seg} {rm}" do |d,mod,seg,rm|
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
 
+### PUSH: Push
+instruction_define "1111 1111 {mod} 110 {rm}" do |mod,rm|
+  # Register/Memory
+  src = @DataEle.r_mem(mod,rm,1)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    sp.data = sp.data - 2
+    top = @DataEle.mem(sp.data,"SS",1)
+    top.data = src.data
+  end
+  ["PUSH", src[:sign]]
+end
+instruction_define "0101 0{reg}" do |reg|
+  # Register
+  src = @DataEle.reg(reg,1)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    sp.data = sp.data - 2
+    top = @DataEle.mem(sp.data,"SS",1)
+    top.data = src.data
+  end
+  ["PUSH", src[:sign]]
+end
+instruction_define "000 {seg} 110" do |seg|
+  # Segment Register
+  src = @DataEle.seg(seg)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    sp.data = sp.data - 2
+    top = @DataEle.mem(sp.data,"SS",1)
+    top.data = src.data
+  end
+  ["PUSH", src[:sign]]
+end
+
+### POP: Pop
+instruction_define "1000 1111 {mod} 000 {rm}" do |mod,rm|
+  # Register/Memory
+  obj = @DataEle.r_mem(mod,rm,1)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    top = @DataEle.mem(sp.data,"SS",1)
+    obj.data = top.data
+    top.data = 0
+    sp.data = sp.data + 2
+  end
+  ["POP", obj[:sign]]
+end
+instruction_define "0101 1{reg}" do |reg|
+  # Register
+  obj = @DataEle.reg(reg,1)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    top = @DataEle.mem(sp.data,"SS",1)
+    obj.data = top.data
+    top.data = 0
+    sp.data = sp.data + 2
+  end
+  ["POP", obj[:sign]]
+end
+instruction_define "000{seg}111" do |seg|
+  # Register/Memory
+  obj = @DataEle.seg(seg)
+  sp  = @DataEle.reg("SP")
+  unless @disass
+    top = @DataEle.mem(sp.data,"SS",1)
+    obj.data = top.data
+    top.data = 0
+    sp.data = sp.data + 2
+  end
+  ["POP", obj[:sign]]
+end
+
 ##ARITHMETIC
 ### ADD: Add
 instruction_define "0000 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
-
+  ["ADD","no"]
 end
 
 ins_set = @ins_set

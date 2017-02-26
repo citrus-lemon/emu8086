@@ -93,10 +93,14 @@ class CPU
           end
           e
         end
-        def mem(addr,w=0,static = 0)
+        def mem(addr,static = "DS",w = 0)
           e = self.new
           e[:class] = "mem"
-          e[:addr] = @@self.DS * 16 + addr
+          e[:addr] = case static
+          when "DS" then @@self.DS
+          when "SS" then @@self.SS
+          else 0
+          end * 16 + addr
           e[:word] = w
           e[:sign] = "[%0#{(w+1)*2}xH]" % addr
           e
@@ -177,16 +181,16 @@ class CPU
 
   ["A","B","C","D"].each do |reg| # AL,BL,CL,DL,AH,BH,CH,DH
     define_method (reg + "L").to_sym do
-      self.instance_variable_get("@"+reg+"X") & 0xff
+      self.instance_variable_get("@"+reg+"X") & 0x100
     end
     define_method (reg + "H").to_sym do
-      (self.instance_variable_get("@"+reg+"X") & 0xff00) >> 8
+      (self.instance_variable_get("@"+reg+"X") & 0x10000) >> 8
     end
     define_method (reg + "L=").to_sym do |val|
-      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0xff00) + (val % 0x100) )
+      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0x10000) + (val % 0x100) )
     end
     define_method (reg + "H=").to_sym do |val|
-      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0x00ff) + ((val % 0x100) << 8) )
+      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0x100) + ((val % 0x100) << 8) )
     end
   end
 
@@ -195,7 +199,7 @@ class CPU
   def load_code(code)
     if code.class == Array
       @codeline = code.length
-      @memory[(@CS*16)..(@CS*16+@codeline)] = code.map { |e| e % 0xff }
+      @memory[(@CS*16)..(@CS*16+@codeline)] = code.map { |e| e % 0x100 }
     end
   end
 
@@ -229,7 +233,7 @@ class CPU
 
   def fetchb
     b = @memory[@CS * 16 + @PC]
-    b = b ? b % 0xff : 0
+    b = b ? b % 0x100 : 0
     @PC += 1
     b
   end
@@ -260,20 +264,9 @@ class CPU
       if flag
         code = self.instance_exec *(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act]
         return [pos, *code]
-        break
       end
     end
     throw "unknown operator at #{pos}" unless flag
-  end
-
-  def clear
-    @AX, @BX, @CX, @DX = 0, 0, 0, 0
-    @SI, @DI, @BP, @SP = 0, 0, 0, 0
-    @PC = 0
-    @CS, @DS, @ES, @SS = 0x800, 0, 0, 0
-    @FLAG = 0
-    @memory[0..0xfff] = @memory[0..0xfff].map { |e| 0 }
-    @disass = false
   end
 
 end

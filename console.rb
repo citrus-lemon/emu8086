@@ -2,6 +2,7 @@
 
 require "./core.rb"
 require "io/console"
+require "irb"
 
 print "\x1b[?1049h"
 print "\x1b[?1h"
@@ -120,10 +121,14 @@ def show_code
   #   ("%s%04x %02x %08b" % [((@cpu.CS * 16 + @cpu.PC == e) ? ">" : ( (@cpu.CS * 16 + (@cpu.pos ? @cpu.pos : 0) == e) ? "-" : " ")),e,c,c])
   # }
   strlist = @cpu.codeparse.map { |e|
-    "%s%04x #{e[1].ljust(5)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]
+    if e[1]
+      "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]
+    else
+      "%s%04x %02x %08b" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0],@cpu.memory[e[0]],@cpu.memory[e[0]]]
+    end
   }
   print "\e[0;57H"
-  print "┌─[Memory]", "─" * (IO.console.winsize[1]-11-56), "┐\n"
+  print "┌─[Code]", "─" * (IO.console.winsize[1]-9-56), "┐\n"
   18.times do |i|
     print "\e[56C", "│\e[#{IO.console.winsize[1]-57}C│\n"
   end
@@ -140,10 +145,32 @@ def step
   @cpu.step
 end
 
+def clear
+  @cpu.instance_eval do
+    @AX, @BX, @CX, @DX = 0, 0, 0, 0
+    @SI, @DI, @BP, @SP = 0, 0, 0, 20
+    @PC = 0
+    @FLAG = 0
+    @SS = 6
+    @SP = 0x20
+    @CS = 0xa
+    @memory[0..0x9f] = @memory[0..0x9f].map { |e| 0 }
+    @disass = false
+  end
+end
+
+@cpu.SS = 6
+@cpu.SP = 0x20
+@cpu.CS = 0xa
+
 @cpu.load_code([
   0b10111011, 0x45, 0x2f,
-  0b10001001, 0b01011011,0x02,
-  0b10001010, 0b11101011
+  0b10001001, 0b01011100,0x02,
+  0b10001010, 0b11101011,
+  0b11111111, 0b11110011,
+  0b11111111, 0b11110011,
+  0b11111111, 0b11110011,
+  0b10001111, 0b11000010
   ])
 @cpu.parse_code
 
@@ -169,6 +196,8 @@ loop do
     rescue Exception => e
       print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{e}\e[0m"
     end
+  when "i"
+    IRB.start
   when "s"
     begin
       print "\e[#{IO.console.winsize[0] - 1};0H"
@@ -187,7 +216,7 @@ loop do
       print "\e[0m"
     end
   when "r"
-    @cpu.clear
+    clear
   when "\u0003"
     break
 
