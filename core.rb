@@ -54,6 +54,9 @@ class CPU
           end
           e
         end
+        def seg(seg)
+          self.reg(@@reg_seg[seg])
+        end
         def r_mem(mod,rm,w)
           case mod
           when 3
@@ -71,7 +74,7 @@ class CPU
               e[:sign] = @@rm_tab[rm].map { |el|
                 r = self.reg(el)
                 e[:addr] += r.data
-                r.name
+                r.sign
               }.join('+')
               disp = case mod
               when 0 then 0
@@ -98,13 +101,14 @@ class CPU
           e[:class] = "imm"
           w = 1 if v >= 0x100
           e[:value] = v % 0x10000
+          e[:sign] = "[%0#{(w+1)*2}xH]" % e[:value]
           STDERR.puts "Immediate data overflow" if v >= 0x10000
           e[:word] = w
           e
         end
       end
 
-      def name; self[:name]; end
+      def sign; self[:sign]; end
       def w   ; self[:word]; end
 
       def data=(d)
@@ -190,16 +194,39 @@ class CPU
     end
   end
 
-  def fetchb
-    b = @memory[@CS * 16 + @PC]
-    b = b ? b % 0xff : 0
-    @PC += 1
-    b
+  def parse_code
+    @codeline rescue throw "need load code first"
+    @disass = true
+    @codeparse = []
+    pc = @PC
+    while @PC < @codeline
+      @codeparse << step
+    end
+    @PC = pc
+    @codeparse.map { |e| e[0] = e[0] + @CS * 16;e }
+    @disass = false
   end
 
   def getmem(addr)
     a = @memory[addr]
     a = a ? a % 0x100 : 0
+  end
+
+  def fetch(w)
+    if w == 0
+      fetchb
+    elsif w == 1
+      fetchw
+    else
+      throw "fetch length invaild"
+    end
+  end
+
+  def fetchb
+    b = @memory[@CS * 16 + @PC]
+    b = b ? b % 0xff : 0
+    @PC += 1
+    b
   end
 
   def fetchw
@@ -208,6 +235,35 @@ class CPU
 
   def test(*op)
     @@ref
+  end
+
+  # run and debug
+
+  def step
+    @disass = false
+    op = []
+    pos = @PC
+    flag = false
+    @@instruction_set.each do |m|
+      flag = true
+      m[:match].each_with_index do |s,i|
+        op << fetchb unless op[i]
+        unless (op[i] & s[:mask]) == s[:match]
+          flag = false
+          break
+        end
+      end
+      if flag
+        code = self.instance_exec *(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act]
+        return [pos, *code]
+        break
+      end
+    end
+    throw "unknown operator at #{pos}" unless flag
+  end
+
+  def clear
+
   end
 
 end
