@@ -112,12 +112,86 @@ def show_memory(start=0)
   print "└", "─"*54, "┘\n"
 end
 
-# loop do
+def show_code
+  str = ""
+  # strlist = ((@cpu.CS * 16 + @cpu.PC - 3)..(@cpu.CS * 16 + @cpu.PC + 40)).map { |e|
+  #   c = @cpu.memory[e]
+  #   c = c ? c % 0x100 : 0
+  #   ("%s%04x %02x %08b" % [((@cpu.CS * 16 + @cpu.PC == e) ? ">" : ( (@cpu.CS * 16 + (@cpu.pos ? @cpu.pos : 0) == e) ? "-" : " ")),e,c,c])
+  # }
+  strlist = @cpu.codeparse.map { |e|
+    "%s%04x #{e[1].ljust(5)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]
+  }
+  print "\e[0;57H"
+  print "┌─[Memory]", "─" * (IO.console.winsize[1]-11-56), "┐\n"
+  18.times do |i|
+    print "\e[56C", "│\e[#{IO.console.winsize[1]-57}C│\n"
+  end
+  print "\e[56C", "└", "─"*(IO.console.winsize[1]-58), "┘\n"
+  # strlist = str.split('\n')
+  18.times do |i|
+    print "\e[#{i+2};58H"
+    break unless strlist[i]
+    print strlist[i][0..(IO.console.winsize[1]-59)]
+  end
+end
+
+def step
+  @cpu.step
+end
+
+@cpu.load_code([
+  0b10111011, 0x45, 0x2f,
+  0b10001001, 0b01011011,0x02,
+  0b10001010, 0b11101011
+  ])
+@cpu.parse_code
+
+loop do
   show_register
   show_FLAGs
   show_memory
+  show_code
   ch = read_char
-  # if ch == "\u0003" then break; end
-# end
+  print "\e[2J"
+  case ch
+  when ":"
+    print "\e[#{IO.console.winsize[0]};0H\e[K:"
+    begin
+      cmd = gets
+    rescue Exception => e
+      print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{"input interupt"}\e[0m"
+      sleep 1
+    end
+    begin
+      r = eval cmd
+      print "\e[#{IO.console.winsize[0]};0H\e[K#{r}"
+    rescue Exception => e
+      print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{e}\e[0m"
+    end
+  when "s"
+    begin
+      print "\e[#{IO.console.winsize[0] - 1};0H"
+      as = step
+      print "%04x  " % as[0]
+      print as[1].ljust(10)
+      print as[2]
+    rescue Exception => e
+      if e.message =~ /unknown operator/
+        print "unknown operator"
+      else
+        print "\e[#{IO.console.winsize[0]-4};0H\e[K\e[41m"
+        puts e.message
+        puts e.backtrace[0..3]
+      end
+      print "\e[0m"
+    end
+  when "r"
+    @cpu.clear
+  when "\u0003"
+    break
+
+  end
+end
 
 print "\e[?1049l"

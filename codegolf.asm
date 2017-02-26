@@ -1,7 +1,7 @@
 
 start:
-	cmp sp, 100h 
-	jz cont 
+	cmp sp, 100h
+	jz cont
 
 hlt:
 	hlt
@@ -51,7 +51,7 @@ cont:
 	jnz hlt
 	jc hlt
 	call printchr
-	
+
 	call calltest
 calltest:
 	pop bx
@@ -109,7 +109,7 @@ cont2:
 
 	mov word [cursor], 80 * 6
 	mov cl, 18
-	
+
 boxloop2:
 	call printchr
 	call printchr
@@ -149,7 +149,7 @@ squareloop:
 	inc cx
 	cmp cx, 20
 	jbe squareloop
-	
+
 
 
 	%define count 100
@@ -263,7 +263,7 @@ numcont_1digit:
 	pop bx
 	ret
 
-	
+
 
 hello:
 	db 'Hello, world!', 0
@@ -272,4 +272,3 @@ cursor:
 	dw 0
 
 memory:
-

@@ -3,7 +3,9 @@ require "./core"
 code = File.open("codegolf.8086")
 @cpu = CPU.new
 
-@cpu.load_code(code)
+@cpu.load_code([
+  0b10111
+  ])
 
 def show_memory(start=0)
   start = start / 0x10
@@ -19,7 +21,7 @@ def show_memory(start=0)
     print "%2X" % i, " "
   end
   print " │\n"
-  50.times do |i|
+  12.times do |i|
     print "│"
     print "%04x" % (start * 16 + i * 16), " "
     16.times do |j|
@@ -31,3 +33,5 @@ def show_memory(start=0)
 end
 
 # show_memory 0x8000
+
+puts @cpu.step
