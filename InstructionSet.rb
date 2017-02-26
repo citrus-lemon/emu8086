@@ -43,20 +43,16 @@ end
 ## DATA TRANSFER
 ### MOV: Move
 instruction_define "1000 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
-  puts self
-  case d
-  when 0
-    src = @DataEle.reg(reg,w)
-    obj = @DataEle.r_mem(mod,rm,w)
-  when 1
-    obj = @DataEle.reg(reg,w)
-    src = @DataEle.r_mem(mod,rm,w)
-  end
+  # Register/Memory from/to Register
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  (temp = obj; obj = src; src = temp) if d == 1
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
 
 instruction_define "1100 011w {mod} 000 {rm}" do |w,mod,rm|
+  # Immediate to Register/Memory
   obj = @DataEle.r_mem(mod,rm,w)
   src = @DataEle.imm(fetch(w))
   obj.data = src.data unless @disass
@@ -64,7 +60,7 @@ instruction_define "1100 011w {mod} 000 {rm}" do |w,mod,rm|
 end
 
 instruction_define "1011 w{reg}" do |w,reg|
-  puts self
+  # Immediate to Register
   obj = @DataEle.reg(reg,w)
   src = @DataEle.imm(fetch(w))
   obj.data = src.data unless @disass
@@ -72,19 +68,27 @@ instruction_define "1011 w{reg}" do |w,reg|
 end
 
 instruction_define "1010 00dw" do |d,w|
+  # Memory to/from Accumulator
   obj = @DataEle.reg("AX")
   src = @DataEle.mem(fetchw)
-  temp = obj; obj = src; src = temp if d == 1
+  (temp = obj; obj = src; src = temp) if d == 1
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
 end
 
 instruction_define "1000 11d0 {mod} 0 {seg} {rm}" do |d,mod,seg,rm|
+  # Register/Memory from/to Segment Register
   obj = @DataEle.r_mem(mod,rm,1)
   src = @DataEle.seg(seg)
-  temp = obj; obj = src; src = temp if d == 1
+  (temp = obj; obj = src; src = temp) if d == 1
   obj.data = src.data unless @disass
   ["MOV","#{obj[:sign]}, #{src[:sign]}"]
+end
+
+##ARITHMETIC
+### ADD: Add
+instruction_define "0000 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+
 end
 
 ins_set = @ins_set

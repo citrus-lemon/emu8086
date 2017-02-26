@@ -44,8 +44,8 @@ class CPU
           e = self.new
           e[:class] = "reg"
           if d.class == String
-            e[:sign] = e[:name] = d; e[:word] = 0; return e if ["AL","CL","DL","BL","AH","CH","DH","BH"].include?(d)
-            e[:sign] = e[:name] = d; e[:word] = 1; return e if ["AX","CX","DX","BX","SP","BP","SI","DI","ES","CS","SS","DS","PC"].include?(d)
+            (e[:sign] = e[:name] = d; e[:word] = 0; return e) if ["AL","CL","DL","BL","AH","CH","DH","BH"].include?(d)
+            (e[:sign] = e[:name] = d; e[:word] = 1; return e) if ["AX","CX","DX","BX","SP","BP","SI","DI","ES","CS","SS","DS","PC"].include?(d)
             throw "invaild register name"
           else
             e[:sign] = e[:name] = @@reg_tab[w][d]
@@ -101,7 +101,7 @@ class CPU
           e[:class] = "imm"
           w = 1 if v >= 0x100
           e[:value] = v % 0x10000
-          e[:sign] = "[%0#{(w+1)*2}xH]" % e[:value]
+          e[:sign] = "%0#{(w+1)*2}xH" % e[:value]
           STDERR.puts "Immediate data overflow" if v >= 0x10000
           e[:word] = w
           e
@@ -240,7 +240,6 @@ class CPU
   # run and debug
 
   def step
-    @disass = false
     op = []
     pos = @PC
     flag = false
@@ -263,7 +262,13 @@ class CPU
   end
 
   def clear
-
+    @AX, @BX, @CX, @DX = 0, 0, 0, 0
+    @SI, @DI, @BP, @SP = 0, 0, 0, 0
+    @PC = 0
+    @CS, @DS, @ES, @SS = 0x800, 0, 0, 0
+    @FLAG = 0
+    @memory[0..0xfff] = @memory[0..0xfff].map { |e| 0 }
+    @disass = false
   end
 
 end
