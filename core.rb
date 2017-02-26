@@ -207,7 +207,7 @@ class CPU
   end
 
   def test(*op)
-    @DataEle.r_mem(*op)
+    @@ref
   end
 
 end
