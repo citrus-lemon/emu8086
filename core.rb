@@ -67,6 +67,7 @@ class CPU
             e[:word] = w
             if (mod == 0) && (rm == 6)
               disp = @@self.fetchw
+              e[:base] = @@self.DS * 16
               e[:addr] = @@self.DS * 16 + disp
               e[:sign] = "[0%04xH]" % disp
             else
@@ -76,6 +77,7 @@ class CPU
               else
                 @@self.DS * 16
               end
+              e[:base] = e[:addr]
               e[:sign] = @@rm_tab[rm].map { |el|
                 r = self.reg(el)
                 e[:addr] += r.data
@@ -93,14 +95,15 @@ class CPU
           end
           e
         end
-        def mem(addr,static = "DS",w = 0)
+        def mem(addr,static = "DS",w = 1)
           e = self.new
           e[:class] = "mem"
-          e[:addr] = case static
+          e[:base] = case static
           when "DS" then @@self.DS
           when "SS" then @@self.SS
           else 0
-          end * 16 + addr
+          end * 16
+          e[:addr] = e[:base] + addr
           e[:word] = w
           e[:sign] = "[%0#{(w+1)*2}xH]" % addr
           e
@@ -153,6 +156,9 @@ class CPU
       def addr
         self[:addr] if self[:class] == "mem"
       end
+      def eaad # EA
+        self[:addr] - self[:base] if self[:class] == "mem"
+      end
     end
 
   end
@@ -172,25 +178,25 @@ class CPU
     ["OF", 11],
   ].each do |flag|
     define_method flag[0].to_sym do
-      (@FLAG & 1 << flag[1]).zero?.!
+      (@FLAG & 1 << flag[1]).zero?.!.to_i
     end
     define_method (flag[0]+"=").to_sym do |a|
-      @FLAG = (@FLAG & ~(1 << flag[1])) + (a.nonzero?.to_i << flag[1])
+      @FLAG = (@FLAG & ~(1 << flag[1])) + ((!!a.to_i.nonzero?).to_i << flag[1])
     end
   end
 
   ["A","B","C","D"].each do |reg| # AL,BL,CL,DL,AH,BH,CH,DH
     define_method (reg + "L").to_sym do
-      self.instance_variable_get("@"+reg+"X") & 0x100
+      self.instance_variable_get("@"+reg+"X") & 0xff
     end
     define_method (reg + "H").to_sym do
-      (self.instance_variable_get("@"+reg+"X") & 0x10000) >> 8
+      (self.instance_variable_get("@"+reg+"X") & 0xff00) >> 8
     end
     define_method (reg + "L=").to_sym do |val|
-      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0x10000) + (val % 0x100) )
+      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0xff00) + (val % 0x100) )
     end
     define_method (reg + "H=").to_sym do |val|
-      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0x100) + ((val % 0x100) << 8) )
+      self.instance_variable_set("@"+reg+"X", (self.instance_variable_get("@"+reg+"X") & 0xff) + ((val % 0x100) << 8) )
     end
   end
 
@@ -222,12 +228,10 @@ class CPU
   end
 
   def fetch(w)
-    if w == 0
-      fetchb
-    elsif w == 1
+    if w == 1
       fetchw
     else
-      throw "fetch length invaild"
+      fetchb
     end
   end
 
