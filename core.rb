@@ -3,9 +3,10 @@ class CPU
   def initialize(copy=nil)
     unless copy
       @AX, @BX, @CX, @DX = 0, 0, 0, 0
-      @SI, @DI, @BP, @SP = 0, 0, 0, 0
+      @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
+      @first_SP = 0x400
       @PC = 0
-      @CS, @DS, @ES, @SS = 0x800, 0, 0, 0
+      @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400
       @FLAG = 0
       @memory = []
       @disass = false
@@ -206,6 +207,13 @@ class CPU
     if code.class == Array
       @codeline = code.length
       @memory[(@CS*16)..(@CS*16+@codeline)] = code.map { |e| e % 0x100 }
+    else
+      n = 0
+      loop do
+        @memory[@CS*16 + n] = code.read_nonblock(1).ord rescue break
+        n += 1
+      end
+      @codeline = n+1
     end
   end
 
@@ -246,6 +254,28 @@ class CPU
     fetchb + (fetchb << 8)
   end
 
+  def push(el)
+    el = @DataEle.imm(el,1) if el.class == Integer
+    sp  = @DataEle.reg("SP")
+    sp.data = sp.data - 2
+    top = @DataEle.mem(sp.data,"SS",1)
+    top.data = el.data
+    el
+  end
+
+  def pop(el = nil)
+    sp  = @DataEle.reg("SP")
+    top = @DataEle.mem(sp.data,"SS",1)
+    if el
+      el.data = top.data
+    else
+      el = @DataEle.imm(top.data,1)
+    end
+    top.data = 0
+    sp.data = sp.data + 2
+    el
+  end
+
   def test(*op)
     @@ref
   end
@@ -254,7 +284,7 @@ class CPU
 
   def step
     op = []
-    pos = @PC
+    @pos = @PC
     flag = false
     @@instruction_set.each do |m|
       flag = true
@@ -267,10 +297,37 @@ class CPU
       end
       if flag
         code = self.instance_exec(*(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act])
-        return [pos, *code]
+        return [@pos, *code]
       end
     end
-    throw "unknown operator at #{pos}" unless flag
+    return [@pos, "unknown"] if @disass
+    throw "unknown operator at #{@pos}" unless flag
+  end
+
+  def stack
+    begin
+      raw = @memory[(@SS * 16 + @SP)..(@SS * 16 + @first_SP - 1)]
+      stack = []
+      raw.each_index { |e| stack.insert 0, raw[e] + (raw[e+1] << 8) if e % 2 == 0 }
+      stack
+    rescue Exception => e
+      []
+    end
+  end
+
+  def clear
+    @AX, @BX, @CX, @DX = 0, 0, 0, 0
+    @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
+    @first_SP = 0x400
+    @PC = 0
+    @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400
+    @FLAG = 0
+    @memory = []
+    @disass = false
+  end
+
+  def halt
+    puts "cpu halt"
   end
 
 end

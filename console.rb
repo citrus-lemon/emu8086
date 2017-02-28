@@ -65,7 +65,7 @@ def show_FLAGs
   print "\e[44C│          │\n"
   print "\e[44C└──────────┘\n"
   f_label = lambda do |label|
-    r = @cpu.method(label).call
+    r = @cpu.method(label).call == 1
     print "\e[4m" if r # underscore
     print "\e[7m" if r # reverse
     print label
@@ -114,13 +114,18 @@ def show_memory(start=0)
 end
 
 def show_code
+  r = -1
+  d = 0
   strlist = @cpu.codeparse.map { |e|
+    r += 1
     if e[1]
+      d = r if (e[0] == @cpu.CS * 16 + @cpu.PC)
       "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]
     else
       "%s%04x %02x %08b" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0],@cpu.memory[e[0]],@cpu.memory[e[0]]]
     end
   }
+  strlist = strlist[(d-6 >= 0 ? d-6 : 0)..-1]
   print "\e[0;57H"
   print "┌─[Code]", "─" * (IO.console.winsize[1]-9-56), "┐\n"
   18.times do |i|
@@ -135,43 +140,46 @@ def show_code
   end
 end
 
+def show_stack
+  print "\e[21;2H"
+  puts "#{@cpu.stack.map{ |e| "%04x" % e}.join('-')}"
+end
+
 def step
   @cpu.step
 end
 
 def clear
-  @cpu.instance_eval do
-    @AX, @BX, @CX, @DX = 0, 0, 0, 0
-    @SI, @DI, @BP, @SP = 0, 0, 0, 20
-    @PC = 0
-    @FLAG = 0
-    @SS = 6
-    @SP = 0x20
-    @CS = 0xa
-    @memory[0..0x9f] = @memory[0..0x9f].map { |e| 0 }
-    @disass = false
-  end
+  @cpu.clear
+  @cpu.load_code(@code)
 end
 
-@cpu.SS = 6
-@cpu.SP = 0x20
-@cpu.CS = 0xa
+@code = File.open("codegolf.8086")
 
-@cpu.load_code([
-  # 0b10111011, 0x45, 0x2f,         # MOV   BX, 2f45H
-  # 0b10001001, 0b01011100,0x02,    # MOV   [SI+02H], BX
-  # 0b10001010, 0b11101011,         # MOV   CH, BL
-  # 0b11111111, 0b11110011,         # PUSH  BX
-  # 0b10001111, 0b11000010,         # POP   BX
-  # 0b10111000, 0xe1, 0x5a,         # MOV   AX, 5ae1H
-  # 0b10010011,                     # XCHG  AX, BX
-  0b10110011, 0x5e,               # MOV   BL, 5EH
-  0b10110000, 0x3c,               # MOV   AL, 3CH
-  # 0b00000000, 0b11000011,         # ADD   AL, BL
-  # 0b10000000, 0b11000000, 0x73,   # ADD AL, 73H
-  0b00000100, 0x73,               # ADD AL, 73H
-  0b11000110, 0b00000110, 0x5e, 0x00, 0x13 # MOV [005eH], 13H
-  ])
+# @code = [
+#   0b10111011, 0x45, 0x2f,         # MOV   BX, 2f45H
+#   0b10111001, 0xe3, 0x13,         # MOV   CX, 13e3H
+#   # 0b10001001, 0b01011100,0x02,    # MOV   [SI+02H], BX
+#   # 0b10001010, 0b11101011,         # MOV   CH, BL
+#   0b01010011,                     # PUSH  BX
+#   0b01010001,
+#   0b01011011,                     # POP   BX
+#   0b01011001,                     # POP   CX
+#   # 0b10111000, 0xe1, 0x5a,         # MOV   AX, 5ae1H
+#   # 0b10010011,                     # XCHG  AX, BX
+#   # 0b10110011, 0x5e,               # MOV   BL, 5EH
+#   # 0b10110000, 0x3c,               # MOV   AL, 3CH
+#   # 0b00000000, 0b11000011,         # ADD   AL, BL
+#   # 0b10000000, 0b11000000, 0x73,   # ADD AL, 73H
+#   # 0b00000100, 0x73,               # ADD AL, 73H
+#   # 0b11000110, 0b00000110, 0x5e, 0x00, 0x13 # MOV [005eH], 13H
+#   # 0b10110011, 0x09,               # MOV   BL, 5EH
+#   # 0b10110000, 0x05,               # MOV   AL, 3CH
+#   # 0b00000000, 0b11000011,         # ADD   AL, BL
+#   # 0b00110111,                     # AAA
+#   # 0b00101000, 0b11000011,
+#   ]
+@cpu.load_code(@code)
 @cpu.parse_code
 
 loop do
@@ -179,6 +187,7 @@ loop do
   show_FLAGs
   show_memory
   show_code
+  show_stack
   ch = read_char
   print "\e[2J"
   case ch

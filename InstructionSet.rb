@@ -1,5 +1,16 @@
 class FalseClass; def to_i; 0 end end
 class TrueClass;  def to_i; 1 end end
+
+class Integer
+  def withsign(w=0)
+    v = (w+1)*8
+    if (self & (1 << (v-1))).nonzero?
+      self - (1 << v)
+    else
+      self
+    end
+  end
+end
 @ins_set = []
 def instruction_define(op, &act)
   match = {:match => [], :par => []}
@@ -43,6 +54,7 @@ end
 # http://datasheets.chipdb.org/Intel/x86/808x/datashts/8086/231455-006.pdf
 
 ## DATA TRANSFER
+
 ### MOV: Move
 instruction_define "1000 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   # Register/Memory from/to Register
@@ -87,34 +99,19 @@ end
 instruction_define "1111 1111 {mod} 110 {rm}" do |mod,rm|
   # Register/Memory
   src = @DataEle.r_mem(mod,rm,1)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    sp.data = sp.data - 2
-    top = @DataEle.mem(sp.data,"SS",1)
-    top.data = src.data
-  end
+  push src unless @disass
   ["PUSH", src[:sign]]
 end
 instruction_define "0101 0{reg}" do |reg|
   # Register
   src = @DataEle.reg(reg,1)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    sp.data = sp.data - 2
-    top = @DataEle.mem(sp.data,"SS",1)
-    top.data = src.data
-  end
+  push src unless @disass
   ["PUSH", src[:sign]]
 end
 instruction_define "000 {seg} 110" do |seg|
   # Segment Register
   src = @DataEle.seg(seg)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    sp.data = sp.data - 2
-    top = @DataEle.mem(sp.data,"SS",1)
-    top.data = src.data
-  end
+  push src unless @disass
   ["PUSH", src[:sign]]
 end
 
@@ -122,37 +119,19 @@ end
 instruction_define "1000 1111 {mod} 000 {rm}" do |mod,rm|
   # Register/Memory
   obj = @DataEle.r_mem(mod,rm,1)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    top = @DataEle.mem(sp.data,"SS",1)
-    obj.data = top.data
-    top.data = 0
-    sp.data = sp.data + 2
-  end
+  pop obj unless @disass
   ["POP", obj[:sign]]
 end
 instruction_define "0101 1{reg}" do |reg|
   # Register
   obj = @DataEle.reg(reg,1)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    top = @DataEle.mem(sp.data,"SS",1)
-    obj.data = top.data
-    top.data = 0
-    sp.data = sp.data + 2
-  end
+  pop obj unless @disass
   ["POP", obj[:sign]]
 end
 instruction_define "000{seg}111" do |seg|
   # Register/Memory
   obj = @DataEle.seg(seg)
-  sp  = @DataEle.reg("SP")
-  unless @disass
-    top = @DataEle.mem(sp.data,"SS",1)
-    obj.data = top.data
-    top.data = 0
-    sp.data = sp.data + 2
-  end
+  pop obj unless @disass
   ["POP", obj[:sign]]
 end
 
@@ -166,8 +145,12 @@ end
 instruction_define "1001 0{reg}" do |reg|
   a = @DataEle.reg("AX")
   b = @DataEle.reg(reg,1)
-  a.data, b.data = b.data, a.data unless @disass
-  ["XCHG",a.sign + ", " + b.sign]
+  if b.sign == "AX"
+    ["NOP"]
+  else
+    a.data, b.data = b.data, a.data unless @disass
+    ["XCHG",a.sign + ", " + b.sign]
+  end
 end
 
 ### LEA: Load EA to Register
@@ -182,7 +165,7 @@ instruction_define "1100 0101 {mod}{reg}{rm}" do |mod,reg,rm|
   obj = @DataEle.reg(reg,1)
   src = @DataEle.r_mem(mod,rm,1)
   ds = @DataEle.reg("DS")
-  ds_src = @DataEle.r_mem(src.base + 2)
+  ds_src = @DataEle.mem(src.eaad + 2)
   obj.data, ds.data = src.data, ds_src.data unless @disass
   ["LDS",obj[:sign] + ", " + src[:sign]]
 end
@@ -197,20 +180,21 @@ instruction_define "1100 0101 {mod}{reg}{rm}" do |mod,reg,rm|
 end
 
 ##ARITHMETIC
+
 ### ADD: Add
 instruction_define "0000 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   # Reg/Memory with Register to Either
   # TODO: unknown operation need to ensure
-  obj = @DataEle.reg(reg,w)
-  src = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
@@ -227,10 +211,10 @@ instruction_define "1000 00sw {mod} 000 {rm}" do |s,w,mod,rm|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
@@ -247,10 +231,10 @@ instruction_define "0000 010w" do |w|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
@@ -264,23 +248,23 @@ end
 instruction_define "0001 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   # Reg/Memory with Register to Either
   # TODO: unknown operation need to ensure
-  obj = @DataEle.reg(reg,w)
-  src = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
-  ["ADD","#{obj[:sign]}, #{src[:sign]}"]
+  ["ADC","#{obj[:sign]}, #{src[:sign]}"]
 end
 instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
@@ -290,17 +274,17 @@ instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
-  ["ADD","#{obj[:sign]}, #{src[:sign]}"]
+  ["ADC","#{obj[:sign]}, #{src[:sign]}"]
 end
 instruction_define "0001 010w" do |w|
   # Immediate to Accumulator
@@ -310,17 +294,473 @@ instruction_define "0001 010w" do |w|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    half_mask = 1 << (v * 4)
+
     sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
-    self.AF = (od - (od & (half_mask - 1))) + (sd - (sd & (half_mask - 1))) != (sum - (sum & (half_mask - 1)))
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
-  ["ADD","#{obj[:sign]}, #{src[:sign]}"]
+  ["ADC","#{obj[:sign]}, #{src[:sign]}"]
+end
+
+### INC: Increment
+instruction_define "1111 111w {mod} 000 {rm}" do |w,mod,rm|
+  # Reg/Memory
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    sum, od, sd = obj.data + 1, obj.data, 1
+    self.ZF = (sum % mask).zero?
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["INC","#{obj[:sign]}"]
+end
+instruction_define "0100 0{reg}" do |reg|
+  # Reg/Memory
+  obj = @DataEle.reg(reg,1)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    sum, od, sd = obj.data + 1, obj.data, 1
+    self.ZF = (sum % mask).zero?
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["INC","#{obj[:sign]}"]
+end
+
+### AAA: ASCII Adjust for Add
+instruction_define "0011 0111" do
+  unless @disass
+    al = @DataEle.reg("AL")
+    if (al.data & 0xf) > 9 || self.AF == 1
+      ah = @DataEle.reg("AH")
+      al.data = al.data + 6
+      self.AF = (od % 0x10 + sd % 0x10) / 0x10
+      self.CF = 1
+      ah.data = ah.data + 1
+    end
+    al.data = al.data & 0xf
+  end
+  ["AAA"]
+end
+
+### SUB: Subtract
+instruction_define "0010 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg/Memory with Register to Either
+  # TODO: unknown operation need to ensure
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SUB","#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
+  # Immediate to Register/Memory
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SUB","#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "0010 110w" do |w|
+  # Immediate to Accumulator
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch(+w),w)
+  obj = @DataEle.mem(0,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SUB","#{obj[:sign]}, #{src[:sign]}"]
+end
+
+### SBB: Subtract with Borrow
+instruction_define "0001 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg/Memory with Register to Either
+  # TODO: unknown operation need to ensure
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data - self.CF) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SBB","#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
+  # Immediate to Register/Memory
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data - self.CF) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SBB","#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "0000 111w" do |w|
+  # Immediate to Accumulator
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch(+w),w)
+  obj = @DataEle.r_mem(0,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data - self.CF) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["SBB","#{obj[:sign]}, #{src[:sign]}"]
+end
+
+### DEC: Decrement
+instruction_define "1111 111w {mod} 001 {rm}" do |w,mod,rm|
+  # Register/Memory
+  # TODO: unknown operation need to ensure
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-1) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["DEC","#{obj[:sign]}"]
+end
+instruction_define "0100 1{reg}" do |reg|
+  # Register
+  # TODO: unknown operation need to ensure
+  obj = @DataEle.reg(reg,1)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-1) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    obj.data = sum % mask
+  end
+  ["DEC","#{obj[:sign]}"]
+end
+
+### NEG: Change sign
+instruction_define "1111 011w {mod} 011 {rm}" do |w,mod,rm|
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    self.CF = obj.data.zero?.!
+    obj.data = obj.data ^ ((1 << (w+1) * 8) - 1) + 1 if self.CF == 1
+  end
+  ["NEG",obj.sign]
+end
+
+### CMP: Compare
+instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg/Memory with Register to Either
+  # TODO: unknown operation need to ensure
+  obj = @DataEle.reg(reg,w)
+  src = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    # obj.data = sum % mask
+  end
+  ["CMP","#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
+  # Immediate to Register/Memory
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    # obj.data = sum % mask
+  end
+  ["CMP","#{w}:#{obj[:sign]}, #{src[:sign]}"]
+end
+instruction_define "0011 110w" do |w|
+  # Immediate to Accumulator
+  # TODO: unknown operation need to ensure
+  src = @DataEle.imm(fetch(+w),w)
+  obj = @DataEle.reg(0,w)
+  unless @disass
+    v = w + 1
+    mask = 1 << (v * 8)
+
+    od, sd = obj.data, (-src.data) % mask
+    sum = od + sd
+    self.ZF = (sum % mask).zero?
+    # TODO: AF unsure
+    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    # TODO: CF unsure
+    self.CF = (sum / mask > 0).!
+    self.SF = sum & (1 << (v * 8 - 1))
+    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
+    # obj.data = sum % mask
+  end
+  ["CMP","#{obj[:sign]}, #{src[:sign]}"]
+end
+
+## LOGIC
+# TODO: no function but dis Assemble
+
+### AND: And
+instruction_define "0010 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg./Memory and Register to Either
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1 # TODO: unsure about d
+  ["AND",obj.sign + ", " + src.sign]
+end
+instruction_define "1000 00sw {mod} 100 {rm}" do |s,w,mod,rm|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  ["AND",obj.sign + ", " + src.sign]
+end
+instruction_define "0010 010w" do |w|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.reg(0,w)
+  src = @DataEle.imm(fetch(w))
+  ["AND",obj.sign + ", " + src.sign]
+end
+
+### OR: Or
+instruction_define "0000 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg./Memory and Register to Either
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1 # TODO: unsure about d
+  ["OR",obj.sign + ", " + src.sign]
+end
+instruction_define "1000 00sw {mod} 001 {rm}" do |s,w,mod,rm|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  ["OR",obj.sign + ", " + src.sign]
+end
+instruction_define "0000 110w" do |w|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.reg(0,w)
+  src = @DataEle.imm(fetch(w))
+  ["OR",obj.sign + ", " + src.sign]
+end
+
+### XOR: Exclusive or
+instruction_define "0011 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
+  # Reg./Memory and Register to Either
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
+  obj, src = src, obj if d == 1 # TODO: unsure about d
+  ["XOR",obj.sign + ", " + src.sign]
+end
+instruction_define "1000 00sw {mod} 110 {rm}" do |s,w,mod,rm|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.imm(fetch((s<<1)+w),w)
+  ["XOR",obj.sign + ", " + src.sign]
+end
+instruction_define "0011 010w" do |w|
+  # Reg./Memory and Register to Either
+  obj = @DataEle.reg(0,w)
+  src = @DataEle.imm(fetch(w))
+  ["XOR",obj.sign + ", " + src.sign]
+end
+
+## CONTROL TRANSFER
+# TODO: no function but dis Assemble
+
+### CALL: Call
+instruction_define "1110 1000" do
+  # Direct within Segment
+  disp = fetchw
+  ["CALL", "0x%04x" % disp]
+end
+instruction_define "1111 1111 {mod} 010 {rm}" do |mod,rm|
+  # Indirect within Segment
+  func = @DataEle.r_mem(mod,rm,1)
+  ["CALL", func.sign]
+end
+
+### JMP: Unconditional Jump
+instruction_define "1110 10n1" do |n|
+  # Direct within Segment
+  disp = (n == 0) ? fetchw : fetchb
+  ["JMP", "0x%0#{(2-n)*2}x" % disp]
+end
+instruction_define "1111 1111 {mod} 100 {rm}" do |mod,rm|
+  # Indirect within Segment
+  func = @DataEle.r_mem(mod,rm,1)
+  ["JMP", func.sign]
+end
+
+### RET: Return from CALL
+instruction_define "1100 0011" do
+  ["RET"]
+end
+
+### JE/JZ JNE/JNZ
+instruction_define "0111 010n" do |n|
+  disp = fetchb
+  (@PC = @pos + disp.withsign if self.ZF == 1-n) unless @disass
+  ["J#{n == 1 ? "N" : ""}Z", "0x%02x" % disp]
+end
+### JB/JNAE JBE/JNA
+instruction_define "0111 0n10" do |n|
+  disp = fetchb
+  ["JB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
+end
+### JNS: Jump on Not Sign
+instruction_define "0111 1001" do
+  disp = fetchb
+  ["JNS", "0x%02x" % disp]
+end
+### JNB/JAE JNBE/JA
+instruction_define "0111 0n11" do |n|
+  disp = fetchb
+  ["JNB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
+end
+
+## PROCESSOR CONTROL
+
+### STC: Set Carry
+instruction_define "1111 1001" do
+  ["STC"]
+end
+### HLT: Halt
+instruction_define "1111 0100" do
+  self.halt unless @disass
+  ["HLT"]
 end
 
 ins_set = @ins_set
