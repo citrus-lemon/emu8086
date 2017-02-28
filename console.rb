@@ -89,7 +89,7 @@ def show_FLAGs
 end
 
 def show_memory(start=0)
-  start = start / 0x10
+  start = start / 0x10 * 0x10
   print "\e[6;0H"
   print "┌─[Memory]", "─"*45, "┐\n"
   get_m = lambda do |addr|
@@ -145,12 +145,21 @@ def show_stack
   puts "#{@cpu.stack.map{ |e| "%04x" % e}.join('-')}"
 end
 
+def show_screen
+  scr = (0x000..(0x000 + 80*25 - 1)).map { |e| @cpu.memory[0x8000 + e] ? @cpu.memory[0x8000 + e] : 0 }
+  print "\e[23;2H"
+  (0..24).each do |i|
+    puts scr[i*80..(i*80+79)].map { |e| e >= 0x20 ? e.chr : " " }.join('')
+  end
+end
+
 def step
   @cpu.step
 end
 
 def clear
   @cpu.clear
+  # @cl = 0
   @cpu.instance_eval do
     @SP = 0x100
     @first_SP = 0x100
@@ -186,16 +195,21 @@ end
 #   # 0b00101000, 0b11000011,
 #   ]
 
+@s = 0.1
+@bp = []
+@bpl = -1
+@cl = 0
+
 clear
 
 loop do
   show_register
   show_FLAGs
-  show_memory 0x0000
+  show_memory 0x8000
+  show_screen
   show_code
   show_stack
   ch = read_char
-  print "\e[2J"
   case ch
   when ":"
     print "\e[#{IO.console.winsize[0]};0H\e[K:"
@@ -203,8 +217,8 @@ loop do
       cmd = gets
     rescue Exception => e
       print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{"input interupt"}\e[0m"
-      sleep 1
     end
+    print "\e[2J"
     begin
       r = eval cmd
       print "\e[#{IO.console.winsize[0]};0H\e[K#{r}"
@@ -214,6 +228,7 @@ loop do
   when "i"
     IRB.start
   when "s"
+    print "\e[2J"
     begin
       print "\e[#{IO.console.winsize[0] - 1};0H"
       as = step
@@ -231,22 +246,33 @@ loop do
       print "\e[0m"
     end
   when "p"
+    print "\e[2J"
     @run = true
     @cpu.onhalt do
       @run = false
+      puts "code by :#{@cl}"
     end
     while @run
-      step
-      print "\e[2J"
-      show_register
-      show_FLAGs
-      show_memory 0x0000
-      show_code
-      show_stack
-      sleep 0.2
+      begin
+        step
+        @cl += 1
+        print "\e[2J"
+        show_register
+        show_FLAGs
+        show_memory 0x8000
+        show_code
+        show_stack
+        show_screen
+        break if @bp.include? @cpu.PC
+        break if @cl == @bpl
+        sleep @s
+      rescue Exception
+        break
+      end
     end
     @run = false
   when "r"
+    print "\e[2J"
     clear
   when "\u0003"
     break

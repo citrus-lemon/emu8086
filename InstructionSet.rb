@@ -10,6 +10,9 @@ class Integer
       self
     end
   end
+  def !
+    self.zero?
+  end
 end
 @ins_set = []
 def instruction_define(op, &act)
@@ -196,7 +199,7 @@ instruction_define "0000 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -215,7 +218,7 @@ instruction_define "1000 00sw {mod} 000 {rm}" do |s,w,mod,rm|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -234,7 +237,7 @@ instruction_define "0000 010w" do |w|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -256,7 +259,7 @@ instruction_define "0001 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -275,7 +278,7 @@ instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -294,7 +297,7 @@ instruction_define "0001 010w" do |w|
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -312,7 +315,7 @@ instruction_define "1111 111w {mod} 000 {rm}" do |w,mod,rm|
     self.ZF = (sum % mask).zero?
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -328,7 +331,7 @@ instruction_define "0100 0{reg}" do |reg|
     self.ZF = (sum % mask).zero?
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -369,7 +372,7 @@ instruction_define "0010 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -391,7 +394,7 @@ instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -413,7 +416,7 @@ instruction_define "0010 110w" do |w|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -438,7 +441,7 @@ instruction_define "0001 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -460,7 +463,7 @@ instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -482,7 +485,7 @@ instruction_define "0000 111w" do |w|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -505,7 +508,7 @@ instruction_define "1111 111w {mod} 001 {rm}" do |w,mod,rm|
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -526,7 +529,7 @@ instruction_define "0100 1{reg}" do |reg|
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = sum % mask
   end
@@ -547,7 +550,7 @@ instruction_define "1111 011w {mod} 011 {rm}" do |w,mod,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     obj.data = obj.data ^ ((1 << (w+1) * 8) - 1) + 1 if self.CF == 1
   end
@@ -573,7 +576,7 @@ instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     # obj.data = sum % mask
   end
@@ -598,7 +601,7 @@ instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     # obj.data = sum % mask
   end
@@ -621,7 +624,7 @@ instruction_define "0011 110w" do |w|
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
-    self.PF = (0..7).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false
     # obj.data = sum % mask
   end
@@ -638,7 +641,11 @@ instruction_define "1111 011w {mod} 010 {rm}" do |w,mod,rm|
   unless @disass
     ans = obj.data = obj.data ^ mask
     self.CF, self.OF = 0, 0
-    self.ZF, self.SF, self.PF = ans, ans, ans
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
   end
   ["NOT", obj.sign]
 end
@@ -649,21 +656,45 @@ instruction_define "0010 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   src = @DataEle.reg(reg,w)
   obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1 # TODO: unsure about d
-  obj.data = obj.data & src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data & src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["AND",obj.sign + ", " + src.sign]
 end
 instruction_define "1000 00sw {mod} 100 {rm}" do |s,w,mod,rm|
   # Reg./Memory and Register to Either
   obj = @DataEle.r_mem(mod,rm,w)
   src = @DataEle.imm(fetch((s<<1)+w),w)
-  obj.data = obj.data & src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data & src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["AND",obj.sign + ", " + src.sign]
 end
 instruction_define "0010 010w" do |w|
   # Reg./Memory and Register to Either
   obj = @DataEle.reg(0,w)
   src = @DataEle.imm(fetch(w))
-  obj.data = obj.data & src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data & src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["AND",obj.sign + ", " + src.sign]
 end
 
@@ -673,21 +704,45 @@ instruction_define "0000 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   src = @DataEle.reg(reg,w)
   obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1 # TODO: unsure about d
-  obj.data = obj.data | src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data | src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["OR",obj.sign + ", " + src.sign]
 end
 instruction_define "1000 00sw {mod} 001 {rm}" do |s,w,mod,rm|
   # Reg./Memory and Register to Either
   obj = @DataEle.r_mem(mod,rm,w)
   src = @DataEle.imm(fetch((s<<1)+w),w)
-  obj.data = obj.data | src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data | src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["OR",obj.sign + ", " + src.sign]
 end
 instruction_define "0000 110w" do |w|
   # Reg./Memory and Register to Either
   obj = @DataEle.reg(0,w)
   src = @DataEle.imm(fetch(w))
-  obj.data = obj.data | src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data | src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["OR",obj.sign + ", " + src.sign]
 end
 
@@ -697,21 +752,45 @@ instruction_define "0011 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   src = @DataEle.reg(reg,w)
   obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1 # TODO: unsure about d
-  obj.data = obj.data ^ src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data ^ src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["XOR",obj.sign + ", " + src.sign]
 end
 instruction_define "1000 00sw {mod} 110 {rm}" do |s,w,mod,rm|
   # Reg./Memory and Register to Either
   obj = @DataEle.r_mem(mod,rm,w)
   src = @DataEle.imm(fetch((s<<1)+w),w)
-  obj.data = obj.data ^ src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data ^ src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["XOR",obj.sign + ", " + src.sign]
 end
 instruction_define "0011 010w" do |w|
   # Reg./Memory and Register to Either
   obj = @DataEle.reg(0,w)
   src = @DataEle.imm(fetch(w))
-  obj.data = obj.data ^ src.data unless @disass
+  unless @disass
+    ans = obj.data = obj.data ^ src.data
+    self.CF, self.OF = 0, 0
+    v = w + 1
+    mask = 1 << (v * 8)
+    self.ZF = (ans % mask).zero?
+    self.SF = ans & (1 << (v * 8 - 1))
+    self.PF = (0..(v*2-1)).map { |e| ((1 << e) & ans).zero?.!.to_i }.sum % 2 + 1
+  end
   ["XOR",obj.sign + ", " + src.sign]
 end
 
