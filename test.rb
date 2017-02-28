@@ -2,17 +2,16 @@
 require "./core"
 
 code = File.open("codegolf.8086")
-@a = CPU.new
-@a.CS = 0
-@a.load_code(code)
-@a.parse_code
+@cpu = CPU.new
+@cpu.instance_eval do
+  @SP = 0x100
+  @first_SP = 0x100
+end
+@cpu.load_code(code)
+@cpu.parse_code
 
-puts @a.codeparse.map { |e|
-  if e[1]
-    "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @a.CS * 16 + @a.PC) ? ">" : " ",e[0]]
-  else
-    "%s%04x %02x %08b" % [(e[0] == @a.CS * 16 + @a.PC) ? ">" : " ",e[0],@a.memory[e[0]],@a.memory[e[0]]]
-  end
+puts @cpu.codeparse.map { |e|
+  "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.PC) ? ">" : " ",e[0]]
 }
 
 require 'irb'

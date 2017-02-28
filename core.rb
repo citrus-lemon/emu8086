@@ -4,7 +4,8 @@ class CPU
     unless copy
       @AX, @BX, @CX, @DX = 0, 0, 0, 0
       @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
-      @first_SP = 0x400
+      @first_SP = 0x400      # use to show stack bottom
+      @stack_operation = nil # use to change stack bottom unless pop or push
       @PC = 0
       @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400
       @FLAG = 0
@@ -45,8 +46,8 @@ class CPU
           e = self.new
           e[:class] = "reg"
           if d.class == String
-            (e[:sign] = e[:name] = d; e[:word] = 0; return e) if ["AL","CL","DL","BL","AH","CH","DH","BH"].include?(d)
-            (e[:sign] = e[:name] = d; e[:word] = 1; return e) if ["AX","CX","DX","BX","SP","BP","SI","DI","ES","CS","SS","DS","PC"].include?(d)
+            (e[:sign] = e[:name] = d; e[:word] = 0; return e) if ["AL","CL","DL","BL","AH","CH","DH","BH","FLAGL","FLAGH"].include?(d)
+            (e[:sign] = e[:name] = d; e[:word] = 1; return e) if ["AX","CX","DX","BX","SP","BP","SI","DI","ES","CS","SS","DS","PC","FLAG"].include?(d)
             throw "invaild register name"
           else
             e[:sign] = e[:name] = @@reg_tab[w][d]
@@ -70,7 +71,7 @@ class CPU
               disp = @@self.fetchw
               e[:base] = @@self.DS * 16
               e[:addr] = @@self.DS * 16 + disp
-              e[:sign] = "[0%04xH]" % disp
+              e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [0%04xH]" % disp
             else
               # TODO: explain for base address
               e[:addr] = if @@rm_tab[rm].include? "BP"
@@ -91,7 +92,7 @@ class CPU
               end
               e[:addr] += disp
               e[:sign] += (mod == 0) ? "" : ("+%0#{mod*2}xH" % disp)
-              e[:sign] = "[#{e[:sign]}]"
+              e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [#{e[:sign]}]"
             end
           end
           e
@@ -106,7 +107,7 @@ class CPU
           end * 16
           e[:addr] = e[:base] + addr
           e[:word] = w
-          e[:sign] = "[%0#{(w+1)*2}xH]" % addr
+          e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [%0#{(w+1)*2}xH]" % addr
           e
         end
         def imm(v,w=0)
@@ -134,6 +135,7 @@ class CPU
         case self[:class]
         when "reg"
           @@self.method(self[:name]+"=").call(data)
+          @@self.instance_variable_set(:@first_SP,data) if @@self.stack_operation.! && self[:name] == "SP"
         when "mem"
           if self.w == 0
             @@self.memory[self[:addr]] = data % 0x100
@@ -154,6 +156,18 @@ class CPU
         end
       end
 
+      def next
+        if self[:class] == "mem"
+          e = self.class.new
+          e[:class] = "mem"
+          e[:base] = self[:base]
+          e[:addr] = self[:addr] + self[:word]
+          e[:word] = self[:word]
+          e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [%0#{(w+1)*2}xH]" % (e[:addr] - e[:base])
+          e
+        end
+      end
+
       def addr
         self[:addr] if self[:class] == "mem"
       end
@@ -164,7 +178,7 @@ class CPU
 
   end
   attr_accessor :memory, :FLAG, :AX, :BX, :CX, :DX, :SI, :DI, :BP, :SP, :PC, :CS, :DS, :ES, :SS
-  attr_reader :disass, :pos, :codeparse, :DataEle
+  attr_reader :disass, :pos, :codeparse, :DataEle, :stack_operation
 
   # Flags
   [
@@ -183,6 +197,15 @@ class CPU
     end
     define_method (flag[0]+"=").to_sym do |a|
       @FLAG = (@FLAG & ~(1 << flag[1])) + ((!!a.to_i.nonzero?).to_i << flag[1])
+    end
+  end
+
+  ["L","H"].each_with_index do |e,i| # FLAGL, FLAGH
+    define_method ("FLAG" + e).to_sym do
+      @FLAG & (0xff << (i * 8))
+    end
+    define_method ("FLAG" + e + "=").to_sym do |val|
+      @FLAG = @FLAG & (0xff << ((1-i) * 8)) + ((val % 0x100) << ((1-i) * 8))
     end
   end
 
@@ -209,6 +232,7 @@ class CPU
       @memory[(@CS*16)..(@CS*16+@codeline)] = code.map { |e| e % 0x100 }
     else
       n = 0
+      code.pos = 0
       loop do
         @memory[@CS*16 + n] = code.read_nonblock(1).ord rescue break
         n += 1
@@ -226,7 +250,7 @@ class CPU
       @codeparse << step
     end
     @PC = pc
-    @codeparse.map { |e| e[0] = e[0] + @CS * 16;e }
+    # @codeparse.map { |e| e[0] = e[0] + @CS * 16;e }
     @disass = false
   end
 
@@ -257,7 +281,9 @@ class CPU
   def push(el)
     el = @DataEle.imm(el,1) if el.class == Integer
     sp  = @DataEle.reg("SP")
+    @stack_operation = true
     sp.data = sp.data - 2
+    @stack_operation = nil
     top = @DataEle.mem(sp.data,"SS",1)
     top.data = el.data
     el
@@ -272,7 +298,9 @@ class CPU
       el = @DataEle.imm(top.data,1)
     end
     top.data = 0
+    @stack_operation = true
     sp.data = sp.data + 2
+    @stack_operation = nil
     el
   end
 
@@ -284,7 +312,7 @@ class CPU
 
   def step
     op = []
-    @pos = @PC
+    pos = @PC
     flag = false
     @@instruction_set.each do |m|
       flag = true
@@ -297,20 +325,22 @@ class CPU
       end
       if flag
         code = self.instance_exec(*(m[:par].map { |e| ((op[e[:ord]] & (("1"*e[:len]).to_i(2) << e[:pos])) >> e[:pos]) }), &m[:act])
-        return [@pos, *code]
+        return [pos, *code]
       end
     end
-    return [@pos, "unknown"] if @disass
-    throw "unknown operator at #{@pos}" unless flag
+    return [pos, "unknown"] if @disass
+    throw "unknown operator at #{pos}" unless flag
   end
 
   def stack
     begin
       raw = @memory[(@SS * 16 + @SP)..(@SS * 16 + @first_SP - 1)]
+      raw = raw ? raw : []
       stack = []
       raw.each_index { |e| stack.insert 0, raw[e] + (raw[e+1] << 8) if e % 2 == 0 }
       stack
-    rescue Exception => e
+    rescue Exception
+      puts "stack error with fsp:#{@first_SP} sp:#{@SP}"
       []
     end
   end
@@ -327,7 +357,12 @@ class CPU
   end
 
   def halt
+    @halt.call if @halt
     puts "cpu halt"
+  end
+
+  def onhalt(&block)
+    @halt = block
   end
 
 end

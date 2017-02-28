@@ -119,10 +119,10 @@ def show_code
   strlist = @cpu.codeparse.map { |e|
     r += 1
     if e[1]
-      d = r if (e[0] == @cpu.CS * 16 + @cpu.PC)
-      "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0]]
+      d = r if (e[0] == @cpu.PC)
+      "%s%04x #{e[1].ljust(6)}#{e[2]}" % [(e[0] == @cpu.PC) ? ">" : " ",e[0]]
     else
-      "%s%04x %02x %08b" % [(e[0] == @cpu.CS * 16 + @cpu.PC) ? ">" : " ",e[0],@cpu.memory[e[0]],@cpu.memory[e[0]]]
+      "%s%04x %02x %08b" % [(e[0] == @cpu.PC) ? ">" : " ",e[0],@cpu.memory[e[0]],@cpu.memory[e[0]]]
     end
   }
   strlist = strlist[(d-6 >= 0 ? d-6 : 0)..-1]
@@ -151,7 +151,13 @@ end
 
 def clear
   @cpu.clear
+  @cpu.instance_eval do
+    @SP = 0x100
+    @first_SP = 0x100
+    @CS = 0x200
+  end
   @cpu.load_code(@code)
+  @cpu.parse_code
 end
 
 @code = File.open("codegolf.8086")
@@ -179,13 +185,13 @@ end
 #   # 0b00110111,                     # AAA
 #   # 0b00101000, 0b11000011,
 #   ]
-@cpu.load_code(@code)
-@cpu.parse_code
+
+clear
 
 loop do
   show_register
   show_FLAGs
-  show_memory
+  show_memory 0x0000
   show_code
   show_stack
   ch = read_char
@@ -224,6 +230,22 @@ loop do
       end
       print "\e[0m"
     end
+  when "p"
+    @run = true
+    @cpu.onhalt do
+      @run = false
+    end
+    while @run
+      step
+      print "\e[2J"
+      show_register
+      show_FLAGs
+      show_memory 0x0000
+      show_code
+      show_stack
+      sleep 0.2
+    end
+    @run = false
   when "r"
     clear
   when "\u0003"
