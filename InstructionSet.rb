@@ -254,7 +254,7 @@ instruction_define "0001 00dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
+    sum, od, sd = obj.data + src.data + self.CF, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
@@ -273,7 +273,7 @@ instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
+    sum, od, sd = obj.data + src.data + self.CF, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
@@ -292,7 +292,7 @@ instruction_define "0001 010w" do |w|
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-    sum, od, sd = obj.data + src.data, obj.data, src.data + self.CF
+    sum, od, sd = obj.data + src.data + self.CF, obj.data, src.data + self.CF
     self.ZF = (sum % mask).zero?
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     self.CF = sum / mask
@@ -561,8 +561,8 @@ end
 instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
   # Reg/Memory with Register to Either
   # TODO: unknown operation need to ensure
-  obj = @DataEle.reg(reg,w)
-  src = @DataEle.r_mem(mod,rm,w)
+  src = @DataEle.reg(reg,w)
+  obj = @DataEle.r_mem(mod,rm,w)
   obj, src = src, obj if d == 1
   unless @disass
     v = w + 1
@@ -574,7 +574,7 @@ instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     # TODO: AF unsure
     self.AF = (od % 0x10 + sd % 0x10) / 0x10
     # TODO: CF unsure
-    self.CF = (sum / mask > 0).!
+    self.CF = (obj.data > src.data).!
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1
     self.OF = ((od & (1 << (v * 8 - 1))) == sd & (1 << (v * 8 - 1))) ? ((od & (1 << (v * 8 - 1))) != sum & (1 << (v * 8 - 1))) : false

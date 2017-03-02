@@ -142,18 +142,20 @@ end
 
 def show_stack
   print "\e[21;2H"
-  puts "#{@cpu.stack.map{ |e| "%04x" % e}.join('-')}"
+  print "#{@cpu.stack.map{ |e| "%04x" % e}.join('-')}"
 end
 
 def show_screen
   scr = (0x000..(0x000 + 80*25 - 1)).map { |e| @cpu.memory[0x8000 + e] ? @cpu.memory[0x8000 + e] : 0 }
   print "\e[23;2H"
+  n = 23
   (0..24).each do |i|
-    puts scr[i*80..(i*80+79)].map { |e| e >= 0x20 ? e.chr : " " }.join('')
+    print "\e[#{n+i};2H", scr[i*80..(i*80+79)].map { |e| e >= 0x20 ? e.chr : "\e[0C" }.join('')
   end
 end
 
 def step
+  @cl += 1
   @cpu.step
 end
 
@@ -167,6 +169,7 @@ def clear
   end
   @cpu.load_code(@code)
   @cpu.parse_code
+  @cl = 0
 end
 
 @code = File.open("codegolf.8086")
@@ -195,17 +198,30 @@ end
 #   # 0b00101000, 0b11000011,
 #   ]
 
-@s = 0.1
+@s = 0
 @bp = []
 @bpl = -1
 @cl = 0
+@ms = 0x8000
+
+def rbs(i=1) #run by step
+  step
+  yield
+end
+
+# attr_accessor
+[:s, :bp, :bpl, :ms, :cl].each do |sym|
+  define_method sym do
+    self.instance_variable_get("@" + sym.to_s)
+  end
+end
 
 clear
 
 loop do
   show_register
   show_FLAGs
-  show_memory 0x8000
+  show_memory @ms
   show_screen
   show_code
   show_stack
@@ -215,10 +231,10 @@ loop do
     print "\e[#{IO.console.winsize[0]};0H\e[K:"
     begin
       cmd = gets
+      print "\e[2J"
     rescue Exception => e
       print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{"input interupt"}\e[0m"
     end
-    print "\e[2J"
     begin
       r = eval cmd
       print "\e[#{IO.console.winsize[0]};0H\e[K#{r}"
@@ -255,17 +271,18 @@ loop do
     while @run
       begin
         step
-        @cl += 1
-        print "\e[2J"
-        show_register
-        show_FLAGs
-        show_memory 0x8000
-        show_code
-        show_stack
-        show_screen
+        if @s > 0
+          print "\e[2J"
+          show_register
+          show_FLAGs
+          show_memory @ms
+          show_code
+          show_stack
+          show_screen
+          sleep @s
+        end
         break if @bp.include? @cpu.PC
         break if @cl == @bpl
-        sleep @s
       rescue Exception
         break
       end
