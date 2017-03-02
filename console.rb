@@ -165,7 +165,7 @@ def clear
   @cpu.instance_eval do
     @SP = 0x100
     @first_SP = 0x100
-    @CS = 0x200
+    @CS = 0x000
   end
   @cpu.load_code(@code)
   @cpu.parse_code
@@ -243,6 +243,7 @@ loop do
     end
   when "i"
     IRB.start
+    print "\e[2J"
   when "s"
     print "\e[2J"
     begin

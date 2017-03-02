@@ -140,8 +140,8 @@ end
 
 ### XCHG: Exchange
 instruction_define "1000 011w {mod}{reg}{rm}" do |w,mod,reg,rm|
-  a = @DataEle.reg(reg,w)
-  b = @DataEle.r_mem(mod,rm,w)
+  a = @DataEle.r_mem(mod,rm,w)
+  b = @DataEle.reg(reg,w)
   a.data, b.data = b.data, a.data unless @disass
   ["XCHG",a.sign + ", " + b.sign]
 end
