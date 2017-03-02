@@ -153,7 +153,7 @@ def clear
   @cpu.instance_eval do
     @SP = 0x100
     @first_SP = 0x100
-    @CS = 0x200
+    @CS = 0x000
   end
   @cpu.load_code(@code)
   @cpu.parse_code
@@ -197,6 +197,12 @@ def rbs(i=1) #run by step
   yield
 end
 
+def sc
+  m = @cpu.DataEle.mem(0x1d3,"DS",1)
+  cd = m.data
+  [cd / 80 + 1,cd % 80 + 1]
+end
+
 # attr_accessor
 [:s, :bp, :bpl, :ms, :cl].each do |sym|
   define_method sym do
@@ -231,6 +237,7 @@ loop do
     end
   when "i"
     IRB.start
+    print "\e[2J"
   when "s"
     print "\e[2J"
     begin

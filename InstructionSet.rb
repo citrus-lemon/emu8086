@@ -149,8 +149,8 @@ end
 
 ### XCHG: Exchange
 instruction_define "1000 011w {mod}{reg}{rm}" do |w,mod,reg,rm|
-  a = @DataEle.reg(reg,w)
-  b = @DataEle.r_mem(mod,rm,w)
+  a = @DataEle.r_mem(mod,rm,w)
+  b = @DataEle.reg(reg,w)
   a.data, b.data = b.data, a.data unless @disass
   ["XCHG",a.sign + ", " + b.sign]
 end
@@ -217,8 +217,10 @@ end
 instruction_define "1000 00sw {mod} 000 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
-  src = @DataEle.imm(fetch((s<<1)+w),w)
   obj = @DataEle.r_mem(mod,rm,w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -277,8 +279,10 @@ end
 instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
-  src = @DataEle.imm(fetch((s<<1)+w),w)
   obj = @DataEle.r_mem(mod,rm,w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -351,7 +355,7 @@ end
 instruction_define "0011 0111" do
   unless @disass
     al = @DataEle.reg("AL")
-    if (al.data & 0xf) > 9 || self.AF == 1
+    if !!((al.data & 0xf) > 9 || self.AF)
       ah = @DataEle.reg("AH")
       al.data = al.data + 6
       self.AF = (od % 0x10 + sd % 0x10) / 0x10
@@ -390,8 +394,10 @@ end
 instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
-  src = @DataEle.imm(fetch((s<<1)+w),w)
   obj = @DataEle.r_mem(mod,rm,w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -459,8 +465,10 @@ end
 instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
-  src = @DataEle.imm(fetch((s<<1)+w),w)
   obj = @DataEle.r_mem(mod,rm,w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -594,14 +602,13 @@ end
 instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
-  c = fetch((s<<1)+w)
-  c = c + (c << 8) if ((s<<1)+w) == 3
-  src = @DataEle.imm(c,w)
   obj = @DataEle.r_mem(mod,rm,w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-
     od, sd = obj.data, (-src.data) % mask
     sum = od + sd
     self.ZF = (sum % mask).zero?
@@ -889,7 +896,7 @@ end
 ### JB/JNAE JBE/JNA
 instruction_define "0111 0n10" do |n|
   disp = fetchb
-  (@PC = @PC + disp.withsign if n==1 ? !!(self.CF || self.ZF) : !!self.CF) unless @disass
+  (@PC = @PC + disp.withsign if n==1 ? !!(self.CF | self.ZF) : !!self.CF) unless @disass
   ["JB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 ### JS/JNS
@@ -903,7 +910,7 @@ instruction_define "0111 0n11" do |n|
   # JNB/JAE: Jump on Not Below/Above or Equal
   # JNBE/JA: Jump on Not Below or Equal/Above
   disp = fetchb
-  (@PC = @PC + disp.withsign if !(n==1 ? !!(self.CF || self.ZF) : !!self.CF)) unless @disass
+  (@PC = @PC + disp.withsign if !(n==1 ? !!(self.CF | self.ZF) : !!self.CF)) unless @disass
   ["JNB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 
