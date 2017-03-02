@@ -346,7 +346,7 @@ end
 instruction_define "0011 0111" do
   unless @disass
     al = @DataEle.reg("AL")
-    if (al.data & 0xf) > 9 || self.AF == 1
+    if !!((al.data & 0xf) > 9 || self.AF)
       ah = @DataEle.reg("AH")
       al.data = al.data + 6
       self.AF = (od % 0x10 + sd % 0x10) / 0x10
@@ -887,7 +887,7 @@ end
 ### JB/JNAE JBE/JNA
 instruction_define "0111 0n10" do |n|
   disp = fetchb
-  (@PC = @PC + disp.withsign if n==1 ? !!(self.CF || self.ZF) : !!self.CF) unless @disass
+  (@PC = @PC + disp.withsign if n==1 ? !!(self.CF | self.ZF) : !!self.CF) unless @disass
   ["JB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 ### JS/JNS
@@ -901,7 +901,7 @@ instruction_define "0111 0n11" do |n|
   # JNB/JAE: Jump on Not Below/Above or Equal
   # JNBE/JA: Jump on Not Below or Equal/Above
   disp = fetchb
-  (@PC = @PC + disp.withsign if !(n==1 ? !!(self.CF || self.ZF) : !!self.CF)) unless @disass
+  (@PC = @PC + disp.withsign if !(n==1 ? !!(self.CF | self.ZF) : !!self.CF)) unless @disass
   ["JNB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 

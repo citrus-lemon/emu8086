@@ -17,4 +17,7 @@ cl = 4730 expected 13 but '='
   c = c.withsign % 0x10000 if ((s<<1)+w) == 3
   src = @DataEle.imm(c,w)
   ```
-  try to add this and it need to be unsure
+  try to add this and it need to be unsure [done] [dev-core 75b31b0]
+cl = 5056
+  fxxk ruby, no || please ,lots of problem
+  [done]
