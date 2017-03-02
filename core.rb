@@ -234,7 +234,7 @@ class CPU
       n = 0
       code.pos = 0
       loop do
-        @memory[@CS*16 + n] = code.read_nonblock(1).ord rescue break
+        @memory[@CS*16 + n] = code.read(1).ord rescue break
         n += 1
       end
       @codeline = n+1

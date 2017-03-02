@@ -8,19 +8,7 @@ print "\x1b[?1049h"
 print "\x1b[?1h"
 
 def read_char
-  STDIN.echo = false
-  STDIN.raw!
-
-  input = STDIN.getc.chr
-  if input == "\e" then
-    input << STDIN.read_nonblock(3) rescue nil
-    input << STDIN.read_nonblock(2) rescue nil
-  end
-ensure
-  STDIN.echo = true
-  STDIN.cooked!
-
-  return input
+  STDIN.getch
 end
 
 @cpu = CPU.new
@@ -268,6 +256,9 @@ loop do
       @run = false
       puts "code by :#{@cl}"
     end
+    print "\e[0;0H"
+    puts "auto running until breakpoint"
+    puts "press ^C to stop"
     while @run
       begin
         step
@@ -298,6 +289,8 @@ loop do
     if ch == "q"
       break
     end
+  else
+    print "\e[2J"
   end
 end
 
