@@ -209,6 +209,12 @@ def rbs(i=1) #run by step
   yield
 end
 
+def sc
+  m = @cpu.DataEle.mem(0x1d3,"DS",1)
+  cd = m.data
+  [cd / 80 + 1,cd % 80 + 1]
+end
+
 # attr_accessor
 [:s, :bp, :bpl, :ms, :cl].each do |sym|
   define_method sym do

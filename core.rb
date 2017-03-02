@@ -107,7 +107,7 @@ class CPU
           end * 16
           e[:addr] = e[:base] + addr
           e[:word] = w
-          e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [%0#{(w+1)*2}xH]" % addr
+          e[:sign] = "#{e[:word] == 0 ? "byte" : "word"} [%0#{(w+1)*2}xH]" % addr
           e
         end
         def imm(v,w=0)
