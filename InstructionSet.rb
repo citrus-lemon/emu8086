@@ -14,11 +14,13 @@ class Integer
     self.zero?
   end
 end
-class Array
-  def sum
-    s = 0
-    self.each {|e| s += e}
-    s
+unless Array.method_defined?("sum")
+  class Array
+    def sum
+      s = 0
+      self.each {|e| s += e}
+      s
+    end
   end
 end
 @ins_set = []
