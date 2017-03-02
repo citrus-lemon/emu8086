@@ -14,6 +14,13 @@ class Integer
     self.zero?
   end
 end
+class Array
+  def sum
+    s = 0
+    self.each {|e| s += e}
+    s
+  end
+end
 @ins_set = []
 def instruction_define(op, &act)
   match = {:match => [], :par => []}
