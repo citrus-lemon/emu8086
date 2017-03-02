@@ -209,7 +209,9 @@ instruction_define "1000 00sw {mod} 000 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
   obj = @DataEle.r_mem(mod,rm,w)
-  src = @DataEle.imm(fetch((s<<1)+w),w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -269,7 +271,9 @@ instruction_define "1000 00sw {mod} 010 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
   obj = @DataEle.r_mem(mod,rm,w)
-  src = @DataEle.imm(fetch((s<<1)+w),w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -382,7 +386,9 @@ instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
   obj = @DataEle.r_mem(mod,rm,w)
-  src = @DataEle.imm(fetch((s<<1)+w),w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -451,7 +457,9 @@ instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
   obj = @DataEle.r_mem(mod,rm,w)
-  src = @DataEle.imm(fetch((s<<1)+w),w)
+  c = fetch((s<<1)+w)
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
+  src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
@@ -587,12 +595,11 @@ instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
   # TODO: unknown operation need to ensure
   obj = @DataEle.r_mem(mod,rm,w)
   c = fetch((s<<1)+w)
-  c = c + (c << 8) if ((s<<1)+w) == 3
+  c = c.withsign % 0x10000 if ((s<<1)+w) == 3
   src = @DataEle.imm(c,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
-
     od, sd = obj.data, (-src.data) % mask
     sum = od + sd
     self.ZF = (sum % mask).zero?
