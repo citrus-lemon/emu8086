@@ -293,7 +293,11 @@ loop do
     clear
   when "\u0003"
     break
-
+  when "q"
+    ch = read_char
+    if ch == "q"
+      break
+    end
   end
 end
 

@@ -17,6 +17,7 @@ start code console and load `codegolf.8086`
  - `r` call reset status export breakpoint infomation
  - `:` call `ruby` eval
  - `i` call `irb` repl
+ - `qq` exit console
 
 ### ruby command
 
