@@ -15,8 +15,17 @@ class CPU
 
     me = self
 
+    # Data Element is a class binding to the current instance
+    # refers to:
+    # - memory unit
+    # - register unit
+    # - immediate number
+    # data element express the size, type of the element
+    # show the address of memory
+    # simplify the assignment and addressing operation
     @DataEle = Class.new(Hash) do
 
+      # binding the class to current instance
       @@self = me
 
       @@reg_tab = [
@@ -39,9 +48,9 @@ class CPU
       ]
 
       class << self
-        attr_accessor :self
         def reg_tab() @@reg_tab; end
 
+        # Refering register by name or code
         def reg(d,w=2)
           e = self.new
           e[:class] = "reg"
@@ -56,9 +65,11 @@ class CPU
           end
           e
         end
+        # Refering segment register by code
         def seg(seg)
           self.reg(@@reg_seg[seg])
         end
+        # Refering memory or register by mod code(2bits) and r/m code(3bits)
         def r_mem(mod,rm,w)
           case mod
           when 3
@@ -97,6 +108,7 @@ class CPU
           end
           e
         end
+        # Refering memory by address
         def mem(addr,static = "DS",w = 1)
           e = self.new
           e[:class] = "mem"
@@ -110,6 +122,7 @@ class CPU
           e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [%0#{(w+1)*2}xH]" % addr
           e
         end
+        # Immediate Data with no address
         def imm(v,w=0)
           e = self.new
           e[:class] = "imm"
@@ -125,6 +138,7 @@ class CPU
       def sign; self[:sign]; end
       def w   ; self[:word]; end
 
+      # Data assignment
       def data=(d)
         data = unless d.class == self.class
           d % 0x10000
@@ -148,6 +162,7 @@ class CPU
         end
       end
 
+      # Return the data
       def data
         case self[:class]
         when "reg" then @@self.method(self[:name]).call
@@ -156,6 +171,7 @@ class CPU
         end
       end
 
+      # next block of memory after self
       def next
         if self[:class] == "mem"
           e = self.class.new
@@ -192,9 +208,11 @@ class CPU
     ["DF", 10],
     ["OF", 11],
   ].each do |flag|
+    # Define flag read methods
     define_method flag[0].to_sym do
       (@FLAG & 1 << flag[1]).zero?.!.to_i
     end
+    # Define flag write methods
     define_method (flag[0]+"=").to_sym do |a|
       @FLAG = (@FLAG & ~(1 << flag[1])) + ((!!a.to_i.nonzero?).to_i << flag[1])
     end
@@ -224,8 +242,10 @@ class CPU
     end
   end
 
+  # Add the Instruction Set from `InstructionSet.rb'
   include InstructionSet
 
+  # load code from an *Array* or a *File object*
   def load_code(code)
     if code.class == Array
       @codeline = code.length
@@ -241,6 +261,7 @@ class CPU
     end
   end
 
+  # parse code to Assemble by flaging the `@disass` to true and run code without acting
   def parse_code
     @codeline rescue throw "need load code first"
     @disass = true
@@ -254,11 +275,13 @@ class CPU
     @disass = false
   end
 
+  # get memory and avoid nil value
   def getmem(addr)
     a = @memory[addr]
     a = a ? a % 0x100 : 0
   end
 
+  # choose fetchw when 1 or fetchb when else
   def fetch(w)
     if w == 1
       fetchw
@@ -267,6 +290,7 @@ class CPU
     end
   end
 
+  # read a byte from code segment
   def fetchb
     b = @memory[@CS * 16 + @PC]
     b = b ? b % 0x100 : 0
@@ -274,10 +298,12 @@ class CPU
     b
   end
 
+  # read a word(2 bytes) from code segment
   def fetchw
     fetchb + (fetchb << 8)
   end
 
+  # do a stack push operation
   def push(el)
     el = @DataEle.imm(el,1) if el.class == Integer
     sp  = @DataEle.reg("SP")
@@ -289,6 +315,7 @@ class CPU
     el
   end
 
+  # do a stack pop operation
   def pop(el = nil)
     sp  = @DataEle.reg("SP")
     top = @DataEle.mem(sp.data,"SS",1)
@@ -304,12 +331,14 @@ class CPU
     el
   end
 
+  # no usage
   def test(*op)
     @@ref
   end
 
   # run and debug
 
+  # step run code
   def step
     op = []
     pos = @PC
@@ -332,6 +361,7 @@ class CPU
     throw "unknown operator at #{pos}" unless flag
   end
 
+  # output current stack
   def stack
     begin
       raw = @memory[(@SS * 16 + @SP)..(@SS * 16 + @first_SP - 1)]
@@ -345,6 +375,7 @@ class CPU
     end
   end
 
+  # clear the status
   def clear
     @AX, @BX, @CX, @DX = 0, 0, 0, 0
     @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
@@ -356,11 +387,11 @@ class CPU
     @disass = false
   end
 
+  # when cpu halt it run the onhalt event
   def halt
     @halt.call if @halt
     puts "cpu halt"
   end
-
   def onhalt(&block)
     @halt = block
   end
