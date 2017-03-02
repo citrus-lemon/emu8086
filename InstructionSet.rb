@@ -585,10 +585,10 @@ end
 instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
   # Immediate to Register/Memory
   # TODO: unknown operation need to ensure
+  obj = @DataEle.r_mem(mod,rm,w)
   c = fetch((s<<1)+w)
   c = c + (c << 8) if ((s<<1)+w) == 3
   src = @DataEle.imm(c,w)
-  obj = @DataEle.r_mem(mod,rm,w)
   unless @disass
     v = w + 1
     mask = 1 << (v * 8)
