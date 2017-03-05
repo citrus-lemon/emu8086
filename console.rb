@@ -7,6 +7,7 @@ require "irb"
 
 print "\x1b[?1049h"
 print "\x1b[?1h"
+print "\x1b[?25l"
 
 def read_char
   STDIN.getch
@@ -29,20 +30,20 @@ def show_register
   reg_label.call "AX"
   reg_label.call "BX"
   reg_label.call "BP"
-  print "\e[2C"
+  print "  "
   reg_label.call "CS"
   reg_label.call "ES"
-  print "\n\e[1C"
+  print "\n "
   reg_label.call "CX"
   reg_label.call "DX"
   reg_label.call "SI"
-  print "\e[2C"
+  print "  "
   reg_label.call "DS"
-  print "\n\e[1C"
+  print "\n "
   reg_label.call "PC"
   reg_label.call "SP"
   reg_label.call "DI"
-  print "\e[2C"
+  print "  "
   reg_label.call "SS"
 end
 
@@ -125,12 +126,12 @@ def show_code
   18.times do |i|
     print "\e[#{i+2};58H"
     break unless strlist[i]
-    print strlist[i][0..(IO.console.winsize[1]-59)]
+    print strlist[i][0..(IO.console.winsize[1]-59)].ljust(IO.console.winsize[1]-58)
   end
 end
 
 def show_stack
-  print "\e[21;2H"
+  print "\e[21;2H\e[K"
   print "#{@cpu.stack.map{ |e| "%04x" % e}.join('-')}"
 end
 
@@ -181,23 +182,10 @@ end
 #   # 0b00101000, 0b11000011,
 #   ]
 
-@s = 0
+@s = 0.04
 @bp = []
 @bpl = -1
 @ms = 0x8000
-
-@cpu.onstep do
-  if @s > 0
-    print "\e[2J"
-    show_register
-    show_FLAGs
-    show_memory @ms
-    show_code
-    show_stack
-    show_screen
-    sleep @s
-  end
-end
 
 def rbs(i=1) #run by step
   step
@@ -233,10 +221,10 @@ loop do
       print "\e[#{IO.console.winsize[0]};0H\e[K\e[41m#{e}\e[0m"
     end
   when "i"
+    print "\e[2J"
     IRB.start
     print "\e[2J"
   when "s"
-    print "\e[2J"
     begin
       print "\e[#{IO.console.winsize[0] - 1};0H"
       as = @cpu.step
@@ -253,12 +241,31 @@ loop do
       end
       print "\e[0m"
     end
+  when "d"
+    # print "\e[2J"
+    @cpu.step_over
+  when "f"
+    # print "\e[2J"
+    @cpu.step_out
   when "p"
     print "\e[2J"
     print "\e[0;0H"
     puts "auto running until breakpoint"
     puts "press ^C to stop"
+    @cpu.onstep do
+      if @s > 0
+        print "\e[2J"
+        show_register
+        show_FLAGs
+        show_memory @ms
+        show_code
+        show_stack
+        show_screen
+        sleep @s
+      end
+    end
     @cpu.debug
+    @cpu.onstep {}
   when "r"
     print "\e[2J"
     @cpu.clear
@@ -274,4 +281,6 @@ loop do
   end
 end
 
+print "\x1b[?1l"
+print "\x1b[?25h"
 print "\e[?1049l"

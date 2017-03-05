@@ -5,8 +5,13 @@ module Debug
     super
     @breakpointlist, @breaktimeslist = [], []
     @onhalt = Proc.new {}
+    @onstep = Proc.new {}
     @current_times = 0
+    @runstatus = nil
+    @calllevel = 0
   end
+
+  attr_reader :calllevel
 
   # clear the status
   def clear
@@ -20,7 +25,20 @@ module Debug
     @memory = []
     @disass = false
     @current_times = 0
+    @calllevel = 0
     @oninit.call(self) if @oninit
+  end
+
+  def step
+    ans = super
+    unless @disass
+      @current_times += 1
+      case ans[1]
+      when "CALL" then @calllevel += 1
+      when "RET"  then @calllevel -= 1
+      end
+    end
+    ans
   end
 
   def onhalt(&block)
@@ -82,15 +100,39 @@ module Debug
   end
 
   def step_into
-
+    step
+    @onstep.call(self) if @onstep
   end
 
   def step_over
-
+    depth = @calllevel
+    @runstatus = true
+    while @runstatus
+      begin
+        step
+        break unless @calllevel > depth
+      rescue Exception
+        break
+      end
+    end
+    @onstep.call(self) if @onstep
   end
 
   def step_out
-
+    if @calllevel > 0
+      depth = @calllevel
+      while @calllevel
+        begin
+          step
+          break unless @calllevel > depth - 1
+        rescue Exception
+          break
+        end
+      end
+    else
+      step
+    end
+    @onstep.call(self) if @onstep
   end
 
 end
