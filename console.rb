@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby -w
 
 require "./core.rb"
+require "./debug.rb"
 require "io/console"
 require "irb"
 
@@ -142,25 +143,19 @@ def show_screen
   end
 end
 
-def step
-  @cl += 1
-  @cpu.step
-end
+@code = File.open("codegolf.8086")
 
-def clear
-  @cpu.clear
-  # @cl = 0
-  @cpu.instance_eval do
+@cpu.oninit do |s|
+  s.instance_eval do
     @SP = 0x100
     @first_SP = 0x100
     @CS = 0x000
   end
-  @cpu.load_code(@code)
-  @cpu.parse_code
-  @cl = 0
+  s.load_code(@code)
+  s.parse_code
 end
 
-@code = File.open("codegolf.8086")
+
 
 # @code = [
 #   0b10111011, 0x45, 0x2f,         # MOV   BX, 2f45H
@@ -189,28 +184,30 @@ end
 @s = 0
 @bp = []
 @bpl = -1
-@cl = 0
 @ms = 0x8000
+
+@cpu.onstep do
+  if @s > 0
+    print "\e[2J"
+    show_register
+    show_FLAGs
+    show_memory @ms
+    show_code
+    show_stack
+    show_screen
+    sleep @s
+  end
+end
 
 def rbs(i=1) #run by step
   step
   yield
 end
 
-def sc
-  m = @cpu.DataEle.mem(0x1d3,"DS",1)
-  cd = m.data
-  [cd / 80 + 1,cd % 80 + 1]
+def cl
+  @cpu.current_times
 end
 
-# attr_accessor
-[:s, :bp, :bpl, :ms, :cl].each do |sym|
-  define_method sym do
-    self.instance_variable_get("@" + sym.to_s)
-  end
-end
-
-clear
 
 loop do
   show_register
@@ -242,7 +239,7 @@ loop do
     print "\e[2J"
     begin
       print "\e[#{IO.console.winsize[0] - 1};0H"
-      as = step
+      as = @cpu.step
       print "%04x  " % as[0]
       print as[1].ljust(10)
       print as[2]
@@ -258,37 +255,13 @@ loop do
     end
   when "p"
     print "\e[2J"
-    @run = true
-    @cpu.onhalt do
-      @run = false
-      puts "code by :#{@cl}"
-    end
     print "\e[0;0H"
     puts "auto running until breakpoint"
     puts "press ^C to stop"
-    while @run
-      begin
-        step
-        if @s > 0
-          print "\e[2J"
-          show_register
-          show_FLAGs
-          show_memory @ms
-          show_code
-          show_stack
-          show_screen
-          sleep @s
-        end
-        break if @bp.include? @cpu.PC
-        break if @cl == @bpl
-      rescue Exception
-        break
-      end
-    end
-    @run = false
+    @cpu.debug
   when "r"
     print "\e[2J"
-    clear
+    @cpu.clear
   when "\u0003"
     break
   when "q"

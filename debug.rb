@@ -1,6 +1,12 @@
 # Extended for CPU Core to debug operation
 
-class CPU
+module Debug
+  def initialize
+    super
+    @breakpointlist, @breaktimeslist = [], []
+    @onhalt = Proc.new {}
+    @current_times = 0
+  end
 
   # clear the status
   def clear
@@ -13,6 +19,7 @@ class CPU
     @FLAG = 0
     @memory = []
     @disass = false
+    @current_times = 0
     @oninit.call(self) if @oninit
   end
 
@@ -36,22 +43,42 @@ class CPU
   end
 
   def break_at_times(*breaks)
-    @breaklinelist = [] unless @breaklinelist
-    @breaklinelist += breaks
-    @breaklinelist
+    @breaktimeslist = [] unless @breaktimeslist
+    @breaktimeslist += breaks
+    @breaktimeslist
   end
-  def break_at_times(breaks)
-    @breaklinelist = breaks
+  def break_at_times=(breaks)
+    @breaktimeslist = breaks
   end
 
   # Debug Operation
 
   def debug
-
+    @runstatus = true
+    while @runstatus
+      begin
+        step
+        @onstep.call(self) if @onstep
+        break if @breakpointlist.include? @PC
+        break if @breaktimeslist.include? @current_times
+      rescue Exception
+        break
+      end
+      @current_times += 1
+    end
   end
 
   def run
-
+    @runstatus = true
+    while @runstatus
+      begin
+        step
+        @onstep.call(self) if @onstep
+      rescue Exception
+        break
+      end
+      @current_times += 1
+    end
   end
 
   def step_into
@@ -66,4 +93,8 @@ class CPU
 
   end
 
+end
+
+class CPU
+  prepend Debug
 end

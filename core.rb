@@ -194,7 +194,7 @@ class CPU
 
   end
   attr_accessor :memory, :FLAG, :AX, :BX, :CX, :DX, :SI, :DI, :BP, :SP, :PC, :CS, :DS, :ES, :SS
-  attr_reader :disass, :pos, :codeparse, :DataEle, :stack_operation
+  attr_reader :disass, :pos, :codeparse, :DataEle, :stack_operation, :current_times
 
   # Flags
   [
@@ -210,11 +210,11 @@ class CPU
   ].each do |flag|
     # Define flag read methods
     define_method flag[0].to_sym do
-      (@FLAG & 1 << flag[1]).zero?.!.to_i
+      (@FLAG & 1 << flag[1]).to_bool.to_i
     end
     # Define flag write methods
     define_method (flag[0]+"=").to_sym do |a|
-      @FLAG = (@FLAG & ~(1 << flag[1])) + ((!!a.to_i.nonzero?).to_i << flag[1])
+      @FLAG = (@FLAG & ~(1 << flag[1])) + (a.to_bool.to_i << flag[1])
     end
   end
 
@@ -374,11 +374,12 @@ class CPU
 
   # when cpu halt it run the onhalt event
   def halt
+    @runstatus = nil if @runstatus
     @onhalt.call(self) if @onhalt
     puts "cpu halt"
   end
 
-  def oninit(&block)                 
+  def oninit(&block)
     @oninit = block
     @oninit.call(self)
   end
