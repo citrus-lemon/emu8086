@@ -1,49 +1,37 @@
 #!/usr/bin/env ruby -w
 
-class Integer
-  def pos
-    self.negative? ? 0 : self
-  end
-end
+# regex of match code
+/^\s*(\w*):?\s+(segment|ends|db|dw)\s+(.*?)$/i # segment or data
+# $1 = label, $2 = pseudo instruction, $3 = options
+/^(\'((?:\\.)|[^\.])*?\'|[^;#])*/ # except Annotations `#` and `;`
+# $& = code without Annotations
+/^\s*(\w*):/ # substitution for label
+# gsub(_,''), $1 = label
+/^\s*(\w+)(\s+.*?)?$/ # code
+# $1 = code, $2 = options
 
-def Assemble(code)
-  cp = 0 # code point
-  label = []
-  line = 0
+require "./AssembleInstruction"
 
-  err = lambda do
-    code_list = code.split("\n")
-    ((line-5).pos..(line+5).pos).each do |e|
-      STDERR.print e == line ? ">>> " : "    "
-      STDERR.puts code_list[e]
-    end
+class Assemble
+  class << self
+
   end
 
-  code.each_line do |c|
-    # v = c.gsub(/[;#].*/,"")
-    v = c[/^(\'((?:\\.)|[^\.])*?\'|[^;#])*/]
-    if v =~ /^\s*(\w*):/
-      label << { :label => $1, :pos => cp }
-      v = v.gsub(/^\s*(\w*):/, "")
-    end
-    if v =~ /^\s*((\w+)|$)/
-      unless $1.empty?
-        op = $1
-        
-      end
-    elsif v =~ /^\s*%define(.*?)$/
-      #define
-    else
-      err.call
-      return
-    end
-    line += 1
-  end
-end
+  include AsmIns
 
-if __FILE__ == $0
-  puts "Ruby 8086 emulator Assembler"
-  c = ""
-  c = File.open(ARGV[0]).read unless ARGV.empty?
-  Assemble c
+
+  # Exception handling
+
+  def warning(info)
+
+  end
+
+  def error(info)
+
+  end
+
+  def fatal(info)
+
+  end
+
 end
