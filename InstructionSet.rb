@@ -381,7 +381,7 @@ instruction_define "0010 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -405,7 +405,7 @@ instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -427,7 +427,7 @@ instruction_define "0010 110w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -452,7 +452,7 @@ instruction_define "0001 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -476,7 +476,7 @@ instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -498,7 +498,7 @@ instruction_define "0000 111w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -521,7 +521,7 @@ instruction_define "1111 111w {mod} 001 {rm}" do |w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -542,7 +542,7 @@ instruction_define "0100 1{reg}" do |reg|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -589,7 +589,7 @@ instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (obj.data > src.data).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -613,7 +613,7 @@ instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -636,7 +636,7 @@ instruction_define "0011 110w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
