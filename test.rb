@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -w
 require "./core"
 
-code = File.open(ARGV[0] ? ARGV[0] : "codegolf.8086")
+code = File.open("codegolf.8086")
 @cpu = CPU.new
 @cpu.instance_eval do
   @SP = 0x100
