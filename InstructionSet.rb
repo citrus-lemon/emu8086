@@ -427,7 +427,7 @@ instruction_define "0010 110w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
