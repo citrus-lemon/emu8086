@@ -2,15 +2,15 @@ require "./InstructionSet"
 class CPU
   def initialize(copy=nil)
     unless copy
-      @AX, @BX, @CX, @DX = 0, 0, 0, 0
-      @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
-      @first_SP = 0x400      # use to show stack bottom
-      @stack_operation = nil # use to change stack bottom unless pop or push
-      @PC = 0
-      @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400
-      @FLAG = 0
-      @memory = []
-      @disass = false
+      @AX, @BX, @CX, @DX = 0, 0, 0, 0                         # Main registers
+      @SI, @DI, @BP, @SP = 0, 0, 0, 0x400                     # Index registers
+      @first_SP = 0x400                                       # use to show stack bottom
+      @stack_operation = nil                                  # use to change stack bottom unless pop or push
+      @PC = 0                                                 # Program counter
+      @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400                 # Segment Registers
+      @FLAG = 0                                               # Flags
+      @memory = []                                            # Memory data by bytes
+      @disass = false                                         # Disassemble Flag
     end
 
     me = self
@@ -82,7 +82,7 @@ class CPU
               disp = @@self.fetchw
               e[:base] = @@self.DS * 16
               e[:addr] = @@self.DS * 16 + disp
-              e[:sign] = "#{e[:word] == 0 ? "BYTE" : "WORD"} [0%04xH]" % disp
+              e[:sign] = "#{@@w_tag[e[:word]]} [0%04xH]" % disp
             else
               # TODO: explain for base address
               e[:addr] = if @@rm_tab[rm].include? "BP"
@@ -194,7 +194,7 @@ class CPU
 
   end
   attr_accessor :memory, :FLAG, :AX, :BX, :CX, :DX, :SI, :DI, :BP, :SP, :PC, :CS, :DS, :ES, :SS
-  attr_reader :disass, :pos, :codeparse, :DataEle, :stack_operation
+  attr_reader :disass, :pos, :codeparse, :DataEle, :stack_operation, :current_times
 
   # Flags
   [
@@ -210,11 +210,11 @@ class CPU
   ].each do |flag|
     # Define flag read methods
     define_method flag[0].to_sym do
-      (@FLAG & 1 << flag[1]).zero?.!.to_i
+      (@FLAG & 1 << flag[1]).to_bool.to_i
     end
     # Define flag write methods
     define_method (flag[0]+"=").to_sym do |a|
-      @FLAG = (@FLAG & ~(1 << flag[1])) + ((!!a.to_i.nonzero?).to_i << flag[1])
+      @FLAG = (@FLAG & ~(1 << flag[1])) + (a.to_bool.to_i << flag[1])
     end
   end
 
@@ -257,7 +257,7 @@ class CPU
         @memory[@CS*16 + n] = code.read(1).ord rescue break
         n += 1
       end
-      @codeline = n+1
+      @codeline = n
     end
   end
 
@@ -274,6 +274,8 @@ class CPU
     # @codeparse.map { |e| e[0] = e[0] + @CS * 16;e }
     @disass = false
   end
+
+  # Data Operation
 
   # get memory and avoid nil value
   def getmem(addr)
@@ -331,12 +333,7 @@ class CPU
     el
   end
 
-  # no usage
-  def test(*op)
-    @@ref
-  end
-
-  # run and debug
+  # Run and Debug
 
   # step run code
   def step
@@ -375,25 +372,16 @@ class CPU
     end
   end
 
-  # clear the status
-  def clear
-    @AX, @BX, @CX, @DX = 0, 0, 0, 0
-    @SI, @DI, @BP, @SP = 0, 0, 0, 0x400
-    @first_SP = 0x400
-    @PC = 0
-    @CS, @DS, @ES, @SS = 0x800, 0, 0, 0x400
-    @FLAG = 0
-    @memory = []
-    @disass = false
-  end
-
   # when cpu halt it run the onhalt event
   def halt
-    @halt.call if @halt
+    @runstatus = nil if @runstatus
+    @onhalt.call(self) if @onhalt
     puts "cpu halt"
   end
-  def onhalt(&block)
-    @halt = block
+
+  def oninit(&block)
+    @oninit = block
+    @oninit.call(self)
   end
 
 end

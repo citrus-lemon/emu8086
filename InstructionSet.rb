@@ -1,5 +1,5 @@
-class FalseClass; def to_i; 0 end end
-class TrueClass;  def to_i; 1 end end
+class FalseClass; def to_i; 0 end; def to_bool; self end; end
+class TrueClass;  def to_i; 1 end; def to_bool; self end; end
 
 class Integer
   def withsign(w=0)
@@ -10,8 +10,8 @@ class Integer
       self
     end
   end
-  def !
-    self.zero?
+  def to_bool
+    !(self.zero?)
   end
 end
 unless Array.method_defined?("sum")
@@ -355,7 +355,7 @@ end
 instruction_define "0011 0111" do
   unless @disass
     al = @DataEle.reg("AL")
-    if !!((al.data & 0xf) > 9 || self.AF)
+    if ((al.data & 0xf) > 9 || self.AF).to_bool
       ah = @DataEle.reg("AH")
       al.data = al.data + 6
       self.AF = (od % 0x10 + sd % 0x10) / 0x10
@@ -381,7 +381,7 @@ instruction_define "0010 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -405,7 +405,7 @@ instruction_define "1000 00sw {mod} 101 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -427,7 +427,7 @@ instruction_define "0010 110w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -452,7 +452,7 @@ instruction_define "0001 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -476,7 +476,7 @@ instruction_define "1000 00sw {mod} 011 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -498,7 +498,7 @@ instruction_define "0000 111w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -521,7 +521,7 @@ instruction_define "1111 111w {mod} 001 {rm}" do |w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -542,7 +542,7 @@ instruction_define "0100 1{reg}" do |reg|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     # self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -589,7 +589,7 @@ instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (obj.data > src.data).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -613,7 +613,7 @@ instruction_define "1000 00sw {mod} 111 {rm}" do |s,w,mod,rm|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -636,7 +636,7 @@ instruction_define "0011 110w" do |w|
     sum = od + sd
     self.ZF = (sum % mask).zero?
     # TODO: AF unsure
-    self.AF = (od % 0x10 + sd % 0x10) / 0x10
+    self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
     self.CF = (sum / mask > 0).!
     self.SF = sum & (1 << (v * 8 - 1))
@@ -896,7 +896,7 @@ end
 ### JB/JNAE JBE/JNA
 instruction_define "0111 0n10" do |n|
   disp = fetchb
-  (@PC = @PC + disp.withsign if n==1 ? !!(self.CF | self.ZF) : !!self.CF) unless @disass
+  (@PC = @PC + disp.withsign if n==1 ? (self.CF | self.ZF).to_bool : self.CF.to_bool) unless @disass
   ["JB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 ### JS/JNS
@@ -910,7 +910,7 @@ instruction_define "0111 0n11" do |n|
   # JNB/JAE: Jump on Not Below/Above or Equal
   # JNBE/JA: Jump on Not Below or Equal/Above
   disp = fetchb
-  (@PC = @PC + disp.withsign if !(n==1 ? !!(self.CF | self.ZF) : !!self.CF)) unless @disass
+  (@PC = @PC + disp.withsign if !(n==1 ? (self.CF | self.ZF).to_bool : self.CF.to_bool)) unless @disass
   ["JNB#{(n == 1) ? "E" : ""}", "0x%02x" % disp]
 end
 
