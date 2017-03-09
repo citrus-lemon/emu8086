@@ -160,7 +160,7 @@ def clear
   @cl = 0
 end
 
-@code = File.open("codegolf.8086")
+@code = File.open(ARGV[0] ? ARGV[0] : "codegolf.8086")
 
 # @code = [
 #   0b10111011, 0x45, 0x2f,         # MOV   BX, 2f45H
