@@ -63,13 +63,13 @@ module AsmIns # AssembleInstruction
         @info[:value] = numparse @str
       when @str =~ /^(?:(word|byte)\s+)*(?:(\w+)\s*)*\[(.*?)\]$/i
         @info[:type] = "mem"
-        @info[:word] = case ($1 ? $1.upcase : "")
+        @info[:word] = case $1.to_s.upcase
         when "WORD" then 1
         when "BYTE" then 0
         end
         # puts $2
         e = $3.split('+').map(&:strip)
-        k = e.map(&:upcase).select {|i| ["BX","BP","SI","DI"].include?(i) }
+        k = e.map(&:upcase).select {|i| ["BX","BP","SI","DI"].inc lude?(i) }
         t = e.map(&:upcase).select {|i| !["BX","BP","SI","DI"].include?(i) }
         error "number wrong format #{t.join('+')}" if t.length > 1
         @info[:rm] = @@rm_tab.index(k.sort)
@@ -107,6 +107,38 @@ module AsmIns # AssembleInstruction
       @info[:type] == "imm"
     end
 
+    def is_clean_memory
+
+    end
+    
+    def is_memory
+
+    end
+
+    def word
+      @info[:word]
+    end
+
+    def r_mem
+      [mod, rm, disp]
+    end
+
+    def reg
+      reg
+    end
+    
+    def seg
+      seg
+    end
+    
+    def addr
+
+    end
+    
+    def imm
+
+    end
+
     def ==(e)
       if e.class == self.class
         e.parse == self.info
@@ -125,24 +157,42 @@ module AsmIns # AssembleInstruction
     def initialize(*argument)
       @offset = *argument
       @pseudo = false
+      @bytes = nil
+      @code
     end
 
-    attr_writer :bytes, :annotate, :pseudo
+    def bytes=(b)
+      unless @bytes
+        @bytes = b
+      else
+        warning("bytes redefine")
+      end
+    end
+    
+
+    def ready(&block)
+
+    end
+
+    def compile(&block)
+
+    end
+    
 
   end
 
   def self.pseudo(code,&block)
     @@instruction_set[code] = {
-      :name => code
-      :type => :pseudo_code
+      :name => code,
+      :type => :pseudo_code,
       :proc => block
     }
   end
 
   def self.incode(code,&block)
     @@instruction_set[code] = {
-      :name => code
-      :type => :instruction_code
+      :name => code,
+      :type => :instruction_code,
       :proc => block
     }
   end
@@ -164,13 +214,38 @@ def numparse(str)
 end
 
 AsmIns::incode "MOV" do |code|
-  code.parameter
+  code.parameter =~ /^(?:\s*(word|byte)\s+)*(.*?)$/i
+  w = case $1.to_s.upcase
+    when "WORD" then 1
+    when "BYTE" then 0
+    else nil
+  end
+  obj, src = $2.split(',',2).map {|el| AsmIns::Element.new(el,w)}
+  # length
+  w = unless obj.word && src.word
+    obj.word || src.word
+  else
+    if obj.word == src.word
+      obj.word
+    else
+      error("length don't match")
+    end
+  end
+
+
+
   code.bytes = 0
   code.annotate = ["MOV",]
   code.ready do
-
+    obj.ready && src.ready
   end
   code.compile do
 
   end
+end
+
+AsmIns::incode "NOP" do |code|
+  code.annotate = ["NOP"]
+  code.ready {true}
+  code.compile {[0x90]}
 end

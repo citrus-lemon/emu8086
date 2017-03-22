@@ -3,14 +3,14 @@
 # regex of match code
 /^\s*(\w*):?\s+(segment|ends|db|dw)\s+(.*?)$/i # segment or data
 # $1 = label, $2 = pseudo instruction, $3 = options
-/^(\'((?:\\.)|[^\.])*?\'|[^;#])*/ # except Annotations `#` and `;`
-# $& = code without Annotations
+/^((?:\'(?:(?:\\.)|[^\.])*?\'|[^;#])*)[;#](.*)$/ # except Annotations `#` and `;`
+# $1 = code without Annotations, $2 = Annotations
 /^\s*(\w*):/ # substitution for label
 # gsub(_,''), $1 = label
 /^\s*(\w+)(\s+.*?)?$/ # code
 # $1 = code, $2 = options
 
-require "./AssembleInstruction"
+require "./ascore"
 
 class Assemble
   def initialize(file)
@@ -28,6 +28,7 @@ class Assemble
       "wrong format"
     end
     @file = @file.split("\n")
+    @error = STDERR
     @totalline = @file.length
     @exception = []
   end
@@ -59,18 +60,21 @@ class Assemble
   def warning(info)
     str = "Warning (#{@filename}):#{@line + 1}:#{info}"
     @exception << str
+    @error.puts str
     str
   end
 
   def error(info)
     str = "Error (#{@filename}):#{@line + 1}:#{info}"
     @exception << str
+    @error.puts str
     str
   end
 
   def fatal(info)
     str = "Fatal Error (#{@filename}):#{@line + 1}:#{info}"
     @exception << str
+    @error.puts str
     str
   end
 
