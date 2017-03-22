@@ -5,7 +5,7 @@ __version__ = "emu8086 assembler 0.0.0(alpha)"
 class Assembler
 
   # initialize the Assembler instance
-  def initialize(file)
+  def initialize(file,error = nil)
 
     @filename = "-"
     if file.class == String
@@ -19,22 +19,66 @@ class Assembler
     @content = @content.split("\n")
 
     # Rows of file
-    @line = @content.length
+    @rows = @content.length
+    @line = 0
 
+    # Exception
+    @error = error || []
+    @errorflag = false # flag true when disable to generate the code
+
+  end
+
+  class SingletonCode
+    def initialize
+      
+    end
   end
 
   # procedure of assembling
   def assemble
+    # initialize
+    @code = {
+      "main" => {
+        :codes => [],
+        :name  => "main",
+        :type  => :code
+      }
+    }
+    @segment = "main"
+
+    # 1st: parse the code
+
+    # 2nd: expression and marco
 
   end
   
-  # export the binary code
+  # Code Exporting
+
   def binary
     
   end
 
+  def code
+
+  end
+
+private
+  
+  # exception deal
+  ["error","warning","fatal"].each do |p|
+    define_method p.to_sym do |str|
+      @error << "#{p}[#{@line + 1}]: #{str}\n"
+      case
+      when "fatal" then throw "fatal error and halt"
+      when "error" then @errorflag = true
+      end
+    end
+  end
+
+
 end
 
+# main console program
 if __FILE__ == $0
   STDERR.puts "Ruby 80x86 assembler"
   require 'optparse'
@@ -63,7 +107,7 @@ if __FILE__ == $0
   end
   
   if ARGV[0]
-    as = Assembler.new(ARGV[0] == "-" ? STDIN : File.open(ARGV[0]))
+    as = Assembler.new(ARGV[0] == "-" ? STDIN : File.open(ARGV[0]), STDERR)
     as.assemble
     print as.binary
   else

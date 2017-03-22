@@ -1,5 +1,16 @@
 #!/usr/bin/env ruby -w
 
+# regex of match code
+/^\s*(\w*):?\s+(segment|ends|db|dw)\s+(.*?)$/i # segment or data
+# $1 = label, $2 = pseudo instruction, $3 = options
+/^((?:\'(?:(?:\\.)|[^\.])*?\'|[^;#])*)[;#](.*)$/ # except Annotations `#` and `;`
+# $1 = code without Annotations, $2 = Annotations
+/^\s*(\w*):/ # substitution for label
+# gsub(_,''), $1 = label
+/^\s*(\w+)(\s+.*?)?$/ # code
+# $1 = code, $2 = options
+
+
 i = 0
 
 ["error","warning","fatal"].each do |p|
