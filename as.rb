@@ -40,21 +40,22 @@ class Assembler
         :codes => [],
         :name  => "main",
         :type  => :code,
-        :label => []
+        :label => {}
       }
     }
     @segment = "main"
     @offset = 0
+    label = nil
 
     # 1st: parse the code
     @rows.times do |i|
       @line = i
 
-      # except Annotations `#` and `;`
+      # except comment `#` and `;`
       @content[@line] =~ /^((?:\'(?:(?:\\.)|[^\.])*?\'|[^;#])*)(?:[;#](.*))*$/
-      # $1 = code without Annotations, $2 = Annotations
+      # $1 = code without comment, $2 = comment
       code_string = $1
-      annotations = $2
+      comment = $2
 
       case code_string
       when /^(?:\s*(\w*):?\s+)*(segment|ends|db|dw)\s+(.*?)$/i # segment or data
@@ -64,17 +65,19 @@ class Assembler
         when 'segment'
         when 'ends'
         else
-          label = $1
+          l = $1.strip.empty? ? nil : $1
+          warning "label #{label} at offset #{@offset} has been redefine, the previous has been ignored" if label && l
+          label = l if l
           code = $2
           para = $3
         end
       when /^(?:\s*(\w+):)*\s*(?:(\w+)(\s+.*?)?)?$/ # parse label and code
         # $1 = label, $2 = code, $3 = options
-        label = $1
+        warning "label #{label} at offset #{@offset} has been redefine, the previous has been ignored" if label && $1
+        label = $1 if $1
         code = $2
         para = $3
       when /^\s*(%\w+)(\s+.*?)?/ # marco
-        label = nil
         code = $1
         para = $2
       else
@@ -82,36 +85,38 @@ class Assembler
       end
 
       if label
+        # label case sensitive
         unless @code[@segment][:label][label]
           @code[@segment][:label][label] = @offset
         else
-          error "label #{label} redefine"
+          error "label #{label} redefine" unless @code[@segment][:label][label] == @offset
         end
       end
       
       if code
-        code = SingletonCode.new(code, para, annotations)
+        code = SingletonCode.new(code, para, label, comment)
         code.apply(@@code_set, self)
-        offset += code.bytes
-        code.getready
+        # offset += code.bytes
+        # code.getready
+        label = nil
       end
 
     end
 
     # 2nd: expression and marco
 
-    @code.each_pair do |key,value|
-      value[:code].each do |code|
-        code.getready!
-      end
-    end
+    # @code.each_pair do |key,value|
+    #   value[:code].each do |code|
+    #     # code.getready!
+    #   end
+    # end
     
   end
   
   # Code Exporting
 
   def binary
-    
+
   end
 
   def code
@@ -122,7 +127,7 @@ class Assembler
   ["error", "warning", "fatal"].each do |p|
     define_method p.to_sym do |str|
       @error << "#{p}[#{@line + 1}]: #{str}\n"
-      case
+      case p
       when "fatal" then throw "fatal error and halt"
       when "error" then @errorflag = true
       end
@@ -162,7 +167,9 @@ if __FILE__ == $0
   if ARGV[0]
     as = Assembler.new(ARGV[0] == "-" ? STDIN : File.open(ARGV[0]), STDERR)
     as.assemble
-    print as.binary
+    require 'pry'
+    pry
+    # print as.binary
   else
     STDERR.puts "no input file, halt"
     exit
