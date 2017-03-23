@@ -2,6 +2,8 @@
 
 __version__ = "emu8086 assembler 0.0.0(alpha)"
 
+
+require './asclass'
 class Assembler
 
   # initialize the Assembler instance
@@ -28,11 +30,7 @@ class Assembler
 
   end
 
-  class SingletonCode
-    def initialize
-      
-    end
-  end
+  prepend AssemblerClasses
 
   # procedure of assembling
   def assemble
@@ -41,15 +39,73 @@ class Assembler
       "main" => {
         :codes => [],
         :name  => "main",
-        :type  => :code
+        :type  => :code,
+        :label => []
       }
     }
     @segment = "main"
+    @offset = 0
 
     # 1st: parse the code
+    @rows.times do |i|
+      @line = i
+
+      # except Annotations `#` and `;`
+      @content[@line] =~ /^((?:\'(?:(?:\\.)|[^\.])*?\'|[^;#])*)(?:[;#](.*))*$/
+      # $1 = code without Annotations, $2 = Annotations
+      code_string = $1
+      annotations = $2
+
+      case code_string
+      when /^(?:\s*(\w*):?\s+)*(segment|ends|db|dw)\s+(.*?)$/i # segment or data
+        # $1 = label, $2 = pseudo instruction, $3 = options
+        
+        case $2.downcase
+        when 'segment'
+        when 'ends'
+        else
+          label = $1
+          code = $2
+          para = $3
+        end
+      when /^(?:\s*(\w+):)*\s*(?:(\w+)(\s+.*?)?)?$/ # parse label and code
+        # $1 = label, $2 = code, $3 = options
+        label = $1
+        code = $2
+        para = $3
+      when /^\s*(%\w+)(\s+.*?)?/ # marco
+        label = nil
+        code = $1
+        para = $2
+      else
+        fatal "parse error"
+      end
+
+      if label
+        unless @code[@segment][:label][label]
+          @code[@segment][:label][label] = @offset
+        else
+          error "label #{label} redefine"
+        end
+      end
+      
+      if code
+        code = SingletonCode.new(code, para, annotations)
+        code.apply(@@code_set, self)
+        offset += code.bytes
+        code.getready
+      end
+
+    end
 
     # 2nd: expression and marco
 
+    @code.each_pair do |key,value|
+      value[:code].each do |code|
+        code.getready!
+      end
+    end
+    
   end
   
   # Code Exporting
@@ -61,11 +117,9 @@ class Assembler
   def code
 
   end
-
-private
   
   # exception deal
-  ["error","warning","fatal"].each do |p|
+  ["error", "warning", "fatal"].each do |p|
     define_method p.to_sym do |str|
       @error << "#{p}[#{@line + 1}]: #{str}\n"
       case
@@ -74,7 +128,6 @@ private
       end
     end
   end
-
 
 end
 
