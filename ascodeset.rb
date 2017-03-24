@@ -11,7 +11,6 @@ AsCodeSet "MOV" do |code|
   w = case $1.to_s.upcase
     when "WORD" then 1
     when "BYTE" then 0
-    else nil
   end
   obj, src = $2.split(',',2).map {|el| @Element.new(el,w)}
   # length
@@ -25,7 +24,6 @@ AsCodeSet "MOV" do |code|
     end
   end
 
-  code.bytes = 0
   code.annotate = {
     :command => "MOV",
     :args => [
@@ -33,12 +31,28 @@ AsCodeSet "MOV" do |code|
       src
     ]
   }
-  code.ready do
-    obj.ready && src.ready
-  end
-  code.compile do
+
+  code.bytes = 1
+  
+  # code.ready do
+  #   obj.ready && src.ready
+  # end
+  # code.compile do
+  #   [65]
+  # end
+
+  error "cannot assign to immediate data" if obj.immediate?
+  case
+    when obj.register? && src.register?
+      code.bytes = 2
+      code.ready {nil}
+      mod, rm = src.rm_mod
+      reg = obj.code
+      code.compile {[0x88+w,(mod << 6) + (reg << 3) + rm]}
+    when src.immediate?
 
   end
+
 end
 
 as_set = @AssemblerCodeSet

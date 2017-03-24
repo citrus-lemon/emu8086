@@ -59,7 +59,7 @@ def Expression::exp(e)
               nu_stack.push([op,a,b])
             end
         end
-      when el =~ /^(0x[a-z0-9]+|[a-z0-9]+h)|(0b[0-1]+|[0-1]+b)|(\d+)|\'(\\\'|.)\'$/i
+      when el =~ /^(0x\d[a-f0-9]*|\d[a-f0-9]*h)|(0b[0-1]+|[0-1]+b)|(\d+)|\'(\\\'|.)\'$/i
         value = $1.to_i(16) if $1
         value = $2.to_i(2)  if $2
         value = $3.to_i     if $3
@@ -119,10 +119,15 @@ def Expression::exp(e)
         [x]
       end
     end
-    ['+'] + flat(ans)
+    ans = ['+'] + flat(ans)
   else
     ans
   end
+end
+
+def Expression::format?(e)
+  list = e.scan(/(?:[\(\)+\-*\/]|\w+|\'(?:\\\'|.)\')/)
+  e.gsub(/\s/,'') == list.join('').gsub(/\s/,'')
 end
 
 def Expression::vaild?(exp,table = nil)
@@ -141,6 +146,12 @@ def Expression::vaild?(exp,table = nil)
         return false
     end
   end
+end
+
+def Expression::vaild!(exp,table = nil)
+  return true if exp.class == Integer
+  table = {} unless table
+  # TODO: vaild
 end
 
 def Expression::calc(exp,table = nil)
@@ -167,4 +178,9 @@ def Expression::calc(exp,table = nil)
     when "Float"
       throw "float not allow"
   end
+end
+
+if __FILE__ == $0
+  require 'pry'
+  pry
 end

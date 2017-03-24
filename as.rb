@@ -4,6 +4,7 @@ __version__ = "emu8086 assembler 0.0.0(alpha)"
 
 
 require './asclass'
+require './ascodeset'
 class Assembler
 
   # initialize the Assembler instance
@@ -31,6 +32,7 @@ class Assembler
   end
 
   prepend AssemblerClasses
+  include AssemblerCodeSet
 
   # procedure of assembling
   def assemble
@@ -94,29 +96,39 @@ class Assembler
       end
       
       if code
-        code = SingletonCode.new(code, para, label, comment)
+        @code[@segment][:codes] << code = SingletonCode.new(code, para, label, comment)
         code.apply(@@code_set, self)
-        # offset += code.bytes
-        # code.getready
+        @offset += code.bytes
+        code.getready
         label = nil
       end
 
     end
 
+    return !@errorflag if @errorflag
+
     # 2nd: expression and marco
 
-    # @code.each_pair do |key,value|
-    #   value[:code].each do |code|
-    #     # code.getready!
-    #   end
-    # end
-    
+    @code.each_pair do |key,value|
+      @segment = key
+      value[:codes].each do |code|
+        error "code not ready" unless code.getready
+      end
+    end
+
+    return !@errorflag if @errorflag
+    return @code
   end
   
   # Code Exporting
 
   def binary
-
+    throw "have error" if @errorflag
+    row = ''
+    @code["main"][:codes].each do |code|
+      row += code.binary
+    end
+    row
   end
 
   def code
@@ -166,10 +178,11 @@ if __FILE__ == $0
   
   if ARGV[0]
     as = Assembler.new(ARGV[0] == "-" ? STDIN : File.open(ARGV[0]), STDERR)
-    as.assemble
-    require 'pry'
-    pry
-    # print as.binary
+    if as.assemble
+      print as.binary
+    else
+      STDERR.puts "assemble error, halt"
+    end
   else
     STDERR.puts "no input file, halt"
     exit
