@@ -1,8 +1,22 @@
 #!/usr/bin/env ruby
 
-def exp(e)
+module Expression
+  
+end
+
+unless Array.method_defined?("sum")
+  class Array
+    def sum
+      s = 0
+      self.each {|e| s += e}
+      s
+    end
+  end
+end
+
+def Expression::exp(e)
   list = e.scan(/(?:[\(\)+\-*\/]|\w+|\'(?:\\\'|.)\')/)
-  puts 'error parse' unless e.gsub(/\s/,'') == list.join('').gsub(/\s/,'')
+  throw 'expression error with {e}, check with brackets and avoid float number' unless e.gsub(/\s/,'') == list.join('').gsub(/\s/,'')
   op_stack = []
   nu_stack = []
   bl_stack = [0]
@@ -95,7 +109,7 @@ def exp(e)
       if x.class == Array
         case x[0]
           when '+'
-            x[1..-1].map{|t| flat(t)}.flatten(1)
+            x[1..-1].map{|ex| flat(ex)}.flatten(1)
           when '-'
             [x[1],['-',0,x[2]]]
           else
@@ -111,8 +125,46 @@ def exp(e)
   end
 end
 
+def Expression::vaild?(exp,table = nil)
+  return true if exp.class == Integer
+  table = {} unless table
+  return !!table[exp] if exp.class == String
+  paras = exp.flatten.select{|e| e.class == String && !['+','-','*','/'].index(e)}
+  paras.each do |p|
+    case table[p].class.to_s
+      when "Integer"
+      when "Array"
+        # STDERR.puts ""
+      when "String"
+        return false unless table[table[p]]
+      when "NilClass"
+        return false
+    end
+  end
+end
 
-
-p exp "-(8+5)"
-require 'pry'
-pry
+def Expression::calc(exp,table = nil)
+  return exp if exp.class == Integer
+  table = {} unless table
+  case exp.class.to_s
+    when "Array"
+      case exp[0]
+        when '+'
+          exp[1..-1].map{|e| Expression::calc(e,table)}.sum
+        when '-'
+          Expression::calc(exp[1],table) - Expression::calc(exp[2],table)
+        when '*'
+          Expression::calc(exp[1],table) * Expression::calc(exp[2],table)
+        when '/'
+          Expression::calc(exp[1],table) / Expression::calc(exp[2],table)
+      end
+    when "String"
+      Expression::calc(table[exp],table)
+    when "NilClass"
+      0
+    when "Integer"
+      exp
+    when "Float"
+      throw "float not allow"
+  end
+end
