@@ -1,0 +1,39 @@
+{
+  "name": "js8086",
+  "version": "0.0.0",
+  "description": "intel 8086 emulator and web clinet",
+  "main": "index.js",
+  "scripts": {
+    "rubybuild": "ruby ../build.rb",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "deploy": "gh-pages -d build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WindProphet/emu8086.git"
+  },
+  "keywords": [
+    "8086",
+    "Emulator",
+    "Assemblers"
+  ],
+  "author": "WindProphet",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/WindProphet/emu8086/issues"
+  },
+  "homepage": ".",
+  "devDependencies": {
+    "electron-builder": "^15.5.1",
+    "electron-packager": "^8.6.0",
+    "gh-pages": "^0.12.0",
+    "react-scripts": "^0.9.5"
+  },
+  "dependencies": {
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2"
+  }
+}
