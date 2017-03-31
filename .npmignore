@@ -1,0 +1,7 @@
+/.vscode
+/build
+/node_modules
+/test
+/electron.js
+/public
+/src
