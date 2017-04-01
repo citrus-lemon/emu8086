@@ -1,5 +1,8 @@
-span.reg-label {
+.reg-label {
   padding-right: 15px;
+  height: 100%;
+  -webkit-user-select: none;
+          user-select: none;
 }
 
 .reg-block {
@@ -14,6 +17,8 @@ span.reg-label {
 
 .register-space {
   padding: 20px;
+  font-size: 10px;
+  position: absolute;
 }
 
 .register-frame {
@@ -22,16 +27,27 @@ span.reg-label {
   border-radius: 10px;
 }
 
+.memory-space {
+  padding: 20px;
+  font-size: 10px;
+  position: absolute;
+}
+
 .memory-label {
   left: 0;
   width: 50px;
-  position: relative;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  user-select: none;
 }
 
 .memory-table {
-  width: auto;
+  width: calc(100% - 50px);
   right: 0;
-  position: relative;
+  top: 0;
+  bottom: 0;
+  position: absolute;
 }
 
 .memory-space > * {

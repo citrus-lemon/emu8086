@@ -41,11 +41,12 @@ class Register extends Component {
     elements.push(
       <div className="reg-block" data-reg="FLAG">
         <span className="reg-label">FLAG</span>
-        {flageles}
+        <span>{flageles}</span>
       </div>
     )
+    let style = this.props.frame
     return (
-      <div className="register-space">
+      <div className="register-space" style={style}>
         <div className="register-frame">{elements}</div>
       </div>
     )
@@ -54,10 +55,13 @@ class Register extends Component {
 
 class Memory extends Component {
   render() {
+    let style = this.props.frame
     return (
-      <div className="memory-space" style={{ height: '20px'}}>
-        <div className="memory-label"></div>
-        <div className="memory-table"></div>
+      <div className="memory-space" style={style}>
+        <div>
+          <div className="memory-label"></div>
+          <div className="memory-table"></div>
+        </div>
       </div>
     );
   }

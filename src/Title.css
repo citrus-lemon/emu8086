@@ -1,0 +1,12 @@
+.title {
+  width: 100%;
+  position: absolute;
+  height: 50px;
+  background: #333;
+  display: flex;
+  box-sizing: border-box;
+  box-shadow: 0 5px 2px #222;
+  overflow: hidden;
+  user-select: none;
+  -webkit-app-region: drag;
+}
