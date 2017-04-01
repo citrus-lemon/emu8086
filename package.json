@@ -32,13 +32,6 @@
   },
   "homepage": ".",
   "devDependencies": {
-    "babel-cli": "^6.24.0",
-    "babel-core": "^6.24.0",
-    "babel-plugin-transform-es2015-destructuring": "^6.23.0",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.24.0",
-    "babel-plugin-transform-es2015-parameters": "^6.23.0",
-    "babel-plugin-transform-es2015-spread": "^6.22.0",
-    "babel-plugin-transform-strict-mode": "^6.22.0",
     "electron": "^1.6.2",
     "electron-builder": "^15.5.1",
     "electron-packager": "^8.6.0",
