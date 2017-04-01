@@ -1,3 +1,7 @@
 // emu8086 javascript version
 
-const emu8086 = require('./lib/core.js')
+const cpu = require('./lib/core.js')
+
+module.exports = {
+  CPU: cpu
+}

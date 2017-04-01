@@ -62,6 +62,7 @@
         {
           "type": "node",
           "request": "launch",
+          // "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/babel-node",
           "name": "test",
           "program": "${workspaceRoot}/test/command.js"
         }

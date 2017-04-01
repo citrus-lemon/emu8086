@@ -1,0 +1,48 @@
+span.reg-label {
+  padding-right: 15px;
+}
+
+.reg-block {
+  display: inline-block;
+  width: 25%;
+  margin: 10px 0;
+}
+
+.reg-block[data-reg="FLAG"] {
+  width: 75%;
+}
+
+.register-space {
+  padding: 20px;
+}
+
+.register-frame {
+  padding: 20px;
+  /*border: 4px solid #333;*/
+  border-radius: 10px;
+}
+
+.memory-label {
+  left: 0;
+  width: 50px;
+  position: relative;
+}
+
+.memory-table {
+  width: auto;
+  right: 0;
+  position: relative;
+}
+
+.memory-space > * {
+  height: 100%;
+  display: inline-table;
+}
+
+.flag:not(:last-child):after {
+  content: " - ";
+}
+
+.flag.true > span {
+  text-decoration: underline;
+}

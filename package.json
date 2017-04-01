@@ -4,11 +4,13 @@
   "description": "intel 8086 emulator and web clinet",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "npm run cat;react-scripts start",
+    "build": "npm run cat;react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "electron": "electron electron.js",
+    "cat": "node cat.js"
   },
   "bin": {
     "emu8086-as": "./bin/as.js",
@@ -41,6 +43,7 @@
     "electron-builder": "^15.5.1",
     "electron-packager": "^8.6.0",
     "gh-pages": "^0.12.0",
+    "node-module-concat": "^2.1.0",
     "react-scripts": "^0.9.5"
   },
   "dependencies": {
