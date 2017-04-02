@@ -29,14 +29,15 @@ class App extends Component {
       <div className="App">
         <Title></Title>
         <Register cpu={this.core} frame={{
-          top: 50 + 'px',
+          top: 55 + 'px',
           width: this.state.frame.width * 0.4 + 'px',
           height: 200 + 'px',
           left: 0
         }}/>
         <Memory cpu={this.core} frame={{
-          top: 50 + 200 + 'px',
+          top: 55 + 200 + 'px',
           width: this.state.frame.width * 0.4 + 'px',
+          height: this.state.frame.height - 250 + 'px',
           bottom: 0,
           left: 0
         }}/>

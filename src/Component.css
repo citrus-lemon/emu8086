@@ -11,24 +11,35 @@
   margin: 10px 0;
 }
 
+.reg-block > span {
+  cursor: context-menu;
+}
+
 .reg-block[data-reg="FLAG"] {
   width: 75%;
 }
 
 .register-space {
-  padding: 20px;
+  /*padding: 30px;*/
   font-size: 10px;
   position: absolute;
 }
 
-.register-frame {
-  padding: 20px;
+.model-frame {
+  top: 30px;
+  left: 10px;
+  right: 10px;
+  height: 10px;
+  position: absolute;
   /*border: 4px solid #333;*/
-  border-radius: 10px;
+  /*border-radius: 4px;*/
+  /*box-shadow: inset 0 0 2px 0 rgba(0,0,0,0.50);*/
+  overflow: hidden;
+  height: calc(100% - 40px);
 }
 
 .memory-space {
-  padding: 20px;
+  /*padding: 30px;*/
   font-size: 10px;
   position: absolute;
 }
@@ -36,23 +47,47 @@
 .memory-label {
   left: 0;
   width: 50px;
+  height: 100%;
   top: 0;
   bottom: 0;
-  position: absolute;
   user-select: none;
+  display: inline-block;
+  position: absolute;
 }
 
 .memory-table {
   width: calc(100% - 50px);
-  right: 0;
+  height: 100%;
+  left: 50px;
   top: 0;
   bottom: 0;
+  display: inline-block;
   position: absolute;
 }
 
-.memory-space > * {
-  height: 100%;
-  display: inline-table;
+.memory-line {
+  float: left;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.memory-frame {
+  padding: 10px;
+  padding-top: 30px;
+  position: absolute;
+  /*border: 4px solid #333;*/
+  /*border-radius: 4px;*/
+  height: calc(100% - 40px);
+  /*box-shadow: inset 0 0 2px 0 rgba(0,0,0,0.50);*/
+  overflow: hidden;
+  width: 100%;
+}
+
+.memory-block-element {
+  width: 6.25%;
+  display: inline-block;
 }
 
 .flag:not(:last-child):after {
@@ -61,4 +96,20 @@
 
 .flag.true > span {
   text-decoration: underline;
+}
+
+.model-tag {
+    /*box-shadow: rgba(0, 0, 0, 0.498039) 0px 2px 4px 0px;*/
+    position: absolute;
+    left: 40px;
+    height: 40px;
+    width: 120px;
+    top: -13px;
+    z-index: -1;
+    background: rgb(68, 68, 68);
+    border-radius: 4px;
+    line-height: 60px;
+    color: #777;
+    font-size: 15px;
+    text-align: left;
 }
