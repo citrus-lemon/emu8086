@@ -199,14 +199,12 @@ class Memory extends Component {
 
             if (!this.pageel && el) {
               el.addEventListener("mousewheel",(e) => {
-                console.log(e.deltaY)
                 let t = (slide + e.deltaY) > 0 ? slide + e.deltaY : 0
                 translate(t)
                 slide = t
                 render()
               })
               el.addEventListener("touchmove",(e) => {
-                {/*console.log(e.layerY);*/}
                 if (!movestart || isNaN(movestart)) {movestart = e.layerY}
                 let t = (slide + movestart - e.layerY) > 0 ? slide + movestart - e.layerY : 0
                 translate(t)
