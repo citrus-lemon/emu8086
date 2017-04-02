@@ -53,6 +53,7 @@
   user-select: none;
   display: inline-block;
   position: absolute;
+  color: #888;
 }
 
 .memory-table {
@@ -70,6 +71,7 @@
   width: 100%;
   position: absolute;
   left: 0;
+  height: 16px;
   right: 0;
 }
 
