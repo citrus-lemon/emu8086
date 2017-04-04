@@ -20,4 +20,21 @@ class Debug extends Component {
   }
 }
 
-export { Debug }
+class Codelist extends Component {
+  render() {
+    const cl = (i) => {
+      return (
+        <div key={i.toString()}>ccode</div>
+      )
+    }
+    let style = this.props.frame
+    style.overflowY = 'scroll'
+    return (
+      <div className="codelist-space" style={style}>
+        {[...Array(25).keys()].map(cl)}
+      </div>
+    )
+  }
+}
+
+export { Debug, Codelist }

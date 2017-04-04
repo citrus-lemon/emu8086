@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import { Register, Memory } from './Component';
-import { Debug } from './Control';
+import { Debug, Codelist } from './Control';
 import {Title} from './Title';
 import {debug as core} from './concatenated.js';
 
@@ -45,8 +45,14 @@ class App extends Component {
         <Debug cpu={this.core} frame={{
           top: 55 + 'px',
           width: this.state.frame.width * 0.6 + 'px',
-          height: 200 + 'px',
+          height: 75 + 'px',
           left: this.state.frame.width * 0.4 + 'px'
+        }}/>
+        <Codelist cpu={this.core} frame={{
+          top: 130 + 'px',
+          width: this.state.frame.width * 0.3 + 'px',
+          height: this.state.frame.height - 130 + 'px',
+          left: this.state.frame.width * 0.7 + 'px'
         }}/>
       </div>
     );

@@ -15,7 +15,7 @@ class Register extends Component {
     elements.push(...["AX","BX","CX","DX"].map((el) => {
       let str = padz(this.props.cpu.register(el),4)
       return (
-        <div className="reg-block" data-reg={el}>
+        <div className="reg-block" data-reg={el} key={el}>
           <span className="reg-label">{el}</span>
           <span data-byte={el[0]+'H'}>{str.substr(0,2)}</span><span data-byte={el[0]+'L'}>{str.substr(2,2)}</span>
         </div>
@@ -26,7 +26,7 @@ class Register extends Component {
       "CS","DS","SS","ES","PC"
     ].map((el) => {
       return (
-        <div className="reg-block" data-reg={el}>
+        <div className="reg-block" data-reg={el} key={el}>
           <span className="reg-label">{el}</span>
           <span>{padz(this.props.cpu.register(el),4)}</span>
         </div>
@@ -35,11 +35,11 @@ class Register extends Component {
     let flag = this.props.cpu.flag()
     let flageles = Object.keys(flag).map((el) => {
       return (
-        <span className={"flag " + (flag[el] ? "true" : "false")}><span>{el}</span></span>
+        <span className={"flag " + (flag[el] ? "true" : "false")} key={el}><span>{el}</span></span>
       )
     }).reverse()
     elements.push(
-      <div className="reg-block" data-reg="FLAG">
+      <div className="reg-block" data-reg="FLAG" key="FLAG">
         <span className="reg-label">FLAG</span>
         <span>{flageles}</span>
       </div>
@@ -105,10 +105,10 @@ class Memory extends Component {
               }} ref={(el) => {this.searchinput = el}}/>
             </div>
             <div className="memory-table" style={{'color': '#888'}}>
-              {[...Array(16).keys()].map((e) => (<div className="memory-block-element">{padz(e,2)}</div>))}
+              {[...Array(16).keys()].map((e) => (<div className="memory-block-element" key={e.toString()}>{padz(e,2)}</div>))}
             </div>
           </div>
-          <div style={{overflow: 'hidden', position: 'absolute', top: 20, left: 10, right: 10, bottom: 10, '-webkit-overflow-scrolling': 'touch'}} ref={(el) => {
+          <div style={{overflow: 'hidden', position: 'absolute', top: 20, left: 10, right: 10, bottom: 10, WebkitOverflowScrolling: 'touch'}} ref={(el) => {
             const line = (pos) => {
               let element = document.createElement("div")
               element.className = "memory-line"
