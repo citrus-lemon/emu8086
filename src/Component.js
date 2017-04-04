@@ -101,14 +101,14 @@ class Memory extends Component {
 
                 }
                 this.searchinput.value = '';
-                (num && !isNaN(num)) && this.setState({point: num});
+                ((num+1) && !isNaN(num)) && this.setState({point: num});
               }} ref={(el) => {this.searchinput = el}}/>
             </div>
             <div className="memory-table" style={{'color': '#888'}}>
               {[...Array(16).keys()].map((e) => (<div className="memory-block-element">{padz(e,2)}</div>))}
             </div>
           </div>
-          <div style={{overflow: 'hidden', position: 'absolute', top: 20, left: 10, right: 10, bottom: 10}} ref={(el) => {
+          <div style={{overflow: 'hidden', position: 'absolute', top: 20, left: 10, right: 10, bottom: 10, '-webkit-overflow-scrolling': 'touch'}} ref={(el) => {
             const line = (pos) => {
               let element = document.createElement("div")
               element.className = "memory-line"
@@ -137,86 +137,91 @@ class Memory extends Component {
               })
               return element
             }
-            let pos30 = parseInt(this.state.point/16/30)
+            this.pos30 = parseInt(this.state.point/16/30)
             const height = 16
-            let page = document.createElement("div");
-            let slide = height*(parseInt(this.state.point / 16) - 4);
-            (slide < 0) && (slide = 0);
-            (pos30 < 0) && (pos30 = 0);
-            let movestart
-            console.log(movestart)
+            let page = this.pageelement || document.createElement("div");
+            this.pageelement || el.appendChild(page);
+            this.pageelement = page
+            this.slide = height*(parseInt(this.state.point / 16) - 4);
+            (this.slide < 0) && (this.slide = 0);
+            (this.pos30 < 0) && (this.pos30 = 0);
             const translate = (s) => {
-              page.style.transform = `translate3d(0px, -${s}px, 0px)`
+              this.pageelement.style.transform = `translate3d(0px, -${s}px, 0px)`
             }
-            translate(slide)
-            let up,mid,down
+            translate(this.slide)
+            // let this.upelement,this.midelement,this.downelement
             const first_render = (pos) => {
+              while (this.pageelement.firstChild) {
+                this.pageelement.removeChild(this.pageelement.firstChild);
+              }
               let _p30 = parseInt(pos / 30)
-              pos30 = _p30
-              up = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
-              mid = (_p30 >= 0) ? line30(_p30) : void(0)
-              down = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
-              up && page.appendChild(up)
-              mid && page.appendChild(mid)
-              down && page.appendChild(down)
+              this.pos30 = _p30
+              this.upelement = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
+              this.midelement = (_p30 >= 0) ? line30(_p30) : void(0)
+              this.downelement = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
+              this.upelement && this.pageelement.appendChild(this.upelement)
+              this.midelement && this.pageelement.appendChild(this.midelement)
+              this.downelement && this.pageelement.appendChild(this.downelement)
             }
             first_render(parseInt(this.state.point / 16))
-            el.appendChild(page)
             const render = (pos) => {
-              let _p30 = pos ? parseInt(pos / height / 30) : parseInt(slide / height / 30)
-              if (_p30 == pos30) {
+              let _p30 = pos ? parseInt(pos / height / 30) : parseInt(this.slide / height / 30)
+              if (_p30 == this.pos30) {
 
               }
-              else if (_p30 == pos30 + 1) {
-                up && page.removeChild(up)
-                up = mid
-                mid = down
-                down = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
-                down && page.appendChild(down)
+              else if (_p30 == this.pos30 + 1) {
+                this.upelement && this.pageelement.removeChild(this.upelement)
+                this.upelement = this.midelement
+                this.midelement = this.downelement
+                this.downelement = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
+                this.downelement && this.pageelement.appendChild(this.downelement)
               }
-              else if (_p30 == pos30 - 1) {
-                down && page.removeChild(down)
-                down = mid
-                mid = up
-                up = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
-                up && page.appendChild(up)
+              else if (_p30 == this.pos30 - 1) {
+                this.downelement && this.pageelement.removeChild(this.downelement)
+                this.downelement = this.midelement
+                this.midelement = this.upelement
+                this.upelement = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
+                this.upelement && this.pageelement.appendChild(this.upelement)
               }
               else {
-                up && page.removeChild(up)
-                mid && page.removeChild(mid)
-                down && page.removeChild(down)
-                up = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
-                mid = (_p30 >= 0) ? line30(_p30) : void(0)
-                down = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
-                up && page.appendChild(up)
-                mid && page.appendChild(mid)
-                down && page.appendChild(down)
+                this.upelement && this.pageelement.removeChild(this.upelement)
+                this.midelement && this.pageelement.removeChild(this.midelement)
+                this.downelement && this.pageelement.removeChild(this.downelement)
+                this.upelement = (_p30 - 1 >= 0) ? line30(_p30 - 1) : void(0)
+                this.midelement = (_p30 >= 0) ? line30(_p30) : void(0)
+                this.downelement = (_p30 + 1 >= 0) ? line30(_p30 + 1) : void(0)
+                this.upelement && this.pageelement.appendChild(this.upelement)
+                this.midelement && this.pageelement.appendChild(this.midelement)
+                this.downelement && this.pageelement.appendChild(this.downelement)
               }
-              pos30 = _p30
+              this.pos30 = _p30
             }
 
             //events
 
             if (!this.pageel && el) {
+              {/*el.removeEventListener("mousewheel")*/}
               el.addEventListener("mousewheel",(e) => {
-                let t = (slide + e.deltaY) > 0 ? slide + e.deltaY : 0
+                let t = (this.slide + e.deltaY) > 0 ? this.slide + e.deltaY : 0
                 translate(t)
-                slide = t
+                this.slide = t
                 render()
               })
+              {/*el.removeEventListener("touchmove")*/}
               el.addEventListener("touchmove",(e) => {
-                if (!movestart || isNaN(movestart)) {movestart = e.layerY}
-                let t = (slide + movestart - e.layerY) > 0 ? slide + movestart - e.layerY : 0
+                if (!this.movestart || isNaN(this.movestart)) {this.movestart = e.layerY}
+                let t = (this.slide + this.movestart - e.layerY) > 0 ? this.slide + this.movestart - e.layerY : 0
                 translate(t)
                 render(t)
               })
+              {/*el.removeEventListener("touchend")*/}
               el.addEventListener("touchend", (e) => {
-                if (!movestart || isNaN(movestart)) {movestart = e.layerY}
-                let t = (slide + movestart - e.layerY) > 0 ? slide + movestart - e.layerY : 0
-                page.style.transform = `translate3d(0px, -${t}px, 0px)`
-                slide = t
+                if (!this.movestart || isNaN(this.movestart)) {this.movestart = e.layerY}
+                let t = (this.slide + this.movestart - e.layerY) > 0 ? this.slide + this.movestart - e.layerY : 0
+                this.pageelement.style.transform = `translate3d(0px, -${t}px, 0px)`
+                this.slide = t
                 render()
-                movestart = void(0)
+                this.movestart = void(0)
               })
             }
             this.pageel = el

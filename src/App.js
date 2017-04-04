@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import './App.css';
 import { Register, Memory } from './Component';
+import { Debug } from './Control';
 import {Title} from './Title';
-import {CPU as core} from './concatenated.js';
+import {debug as core} from './concatenated.js';
 
 class App extends Component {
   constructor(props) {
@@ -40,6 +41,12 @@ class App extends Component {
           height: this.state.frame.height - 250 + 'px',
           bottom: 0,
           left: 0
+        }}/>
+        <Debug cpu={this.core} frame={{
+          top: 55 + 'px',
+          width: this.state.frame.width * 0.6 + 'px',
+          height: 200 + 'px',
+          left: this.state.frame.width * 0.4 + 'px'
         }}/>
       </div>
     );
