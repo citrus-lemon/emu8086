@@ -92,7 +92,7 @@ instruction_define "1011 w{reg}" do |w,reg|
 end
 instruction_define "1010 00dw" do |d,w|
   # Memory to/from Accumulator
-  obj = @DataEle.reg("AX")
+  obj = @DataEle.reg(0,w)
   src = @DataEle.mem(fetchw,"DS",w)
   obj, src = src, obj if d == 1
   obj.data = src.data unless @disass
@@ -591,6 +591,7 @@ instruction_define "0011 10dw {mod} {reg} {rm}" do |d,w,mod,reg,rm|
     # TODO: AF unsure
     self.AF = ((od % 0x10 + sd % 0x10) / 0x10 > 0).!
     # TODO: CF unsure
+    puts "#{sum} #{od} #{sd} "
     self.CF = (obj.data > src.data).!
     self.SF = sum & (1 << (v * 8 - 1))
     self.PF = (0..(v*2-1)).map { |e| ((1 << e) & sum).zero?.!.to_i }.sum % 2 + 1

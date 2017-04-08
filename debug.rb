@@ -11,7 +11,7 @@ module Debug
     @calllevel = 0
   end
 
-  attr_reader :calllevel
+  attr_reader :calllevel, :current_times
 
   # clear the status
   def clear
@@ -75,14 +75,13 @@ module Debug
     @runstatus = true
     while @runstatus
       begin
-        step
-        @onstep.call(self) if @onstep
+        s = step
+        @onstep.call(self,s) if @onstep
         break if @breakpointlist.include? @PC
         break if @breaktimeslist.include? @current_times
       rescue Exception
         break
       end
-      @current_times += 1
     end
   end
 
@@ -90,12 +89,11 @@ module Debug
     @runstatus = true
     while @runstatus
       begin
-        step
-        @onstep.call(self) if @onstep
+        s = step
+        @onstep.call(self,s) if @onstep
       rescue Exception
         break
       end
-      @current_times += 1
     end
   end
 
