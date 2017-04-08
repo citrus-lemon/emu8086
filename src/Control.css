@@ -63,6 +63,19 @@
   line-height: calc(100% + 20px);
 }
 
+button {
+  border: 2px solid #888;
+  border-radius: 5px;
+  margin: 10px;
+  background-color: rgba(0,0,0,0);
+  color: inherit;
+}
+
+button:active {
+  border: 2px solid #aaa;
+  background-color: rgba(100,100,100,0.6);
+}
+
 .screen {
   text-align: left;
   padding: 20px;
