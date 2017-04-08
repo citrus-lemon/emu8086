@@ -11,13 +11,17 @@ const padz = (number, length) => {
 
 class Register extends Component {
   render() {
+    let stress = this.props.update ? this.props.update.filter((el) => typeof(el) == "string") : []
     let elements = []
     elements.push(...["AX","BX","CX","DX"].map((el) => {
       let str = padz(this.props.cpu.register(el),4)
       return (
         <div className="reg-block" data-reg={el} key={el}>
-          <span className="reg-label">{el}</span>
-          <span data-byte={el[0]+'H'}>{str.substr(0,2)}</span><span data-byte={el[0]+'L'}>{str.substr(2,2)}</span>
+          <span className={(stress.includes(el) ? " stress" : "")}>
+            <span className="reg-label">{el}</span>
+            <span className={"" + (stress.includes(el[0]+'H') ? " stress" : "")} data-byte={el[0]+'H'}>{str.substr(0,2)}</span>
+            <span className={"" + (stress.includes(el[0]+'L') ? " stress" : "")} data-byte={el[0]+'L'}>{str.substr(2,2)}</span>
+          </span>
         </div>
       )
     }))
@@ -27,8 +31,10 @@ class Register extends Component {
     ].map((el) => {
       return (
         <div className="reg-block" data-reg={el} key={el}>
-          <span className="reg-label">{el}</span>
-          <span>{padz(this.props.cpu.register(el),4)}</span>
+          <span className={(stress.includes(el) ? " stress" : "")}>
+            <span className="reg-label">{el}</span>
+            <span>{padz(this.props.cpu.register(el),4)}</span>
+          </span>
         </div>
       )
     }))
@@ -59,9 +65,8 @@ class Register extends Component {
 class Memory extends Component {
   constructor() {
     super()
-    this.state = {point: 580}
+    this.state = {point: 0}
     this.lineheight = 16
-    top.hello = this
   }
 
   render() {
@@ -109,6 +114,7 @@ class Memory extends Component {
             </div>
           </div>
           <div style={{overflow: 'hidden', position: 'absolute', top: 20, left: 10, right: 10, bottom: 10, WebkitOverflowScrolling: 'touch'}} ref={(el) => {
+            let stress
             const line = (pos) => {
               let element = document.createElement("div")
               element.className = "memory-line"
@@ -124,6 +130,9 @@ class Memory extends Component {
               [...Array(16).keys()].forEach((e) => {
                 let byte = document.createElement("div")
                 byte.className = "memory-block-element"
+                if (stress == (pos*16+e)) {
+                  byte.className += " stress"
+                }
                 byte.innerText = padz(this.props.cpu.memory(pos*16+e,0),2)
                 table.appendChild(byte)
               })
@@ -137,12 +146,22 @@ class Memory extends Component {
               })
               return element
             }
-            this.pos30 = parseInt(this.state.point/16/30)
+            this.pos30 = this.pos30 || parseInt(this.state.point/16/30)
             const height = 16
             let page = this.pageelement || document.createElement("div");
             this.pageelement || el.appendChild(page);
             this.pageelement = page
-            this.slide = height*(parseInt(this.state.point / 16) - 4);
+            this.slide = this.slide || height*(parseInt(this.state.point / height) - 4);
+            if (this.props.update) {
+              let trace = this.props.update.filter((el) => (typeof(el) == 'number'))
+              if (trace[0]) {
+                this.pos30 = parseInt(trace[0]/16/30)
+                this.slide = height*(parseInt(trace[0]/16) - 4);
+                this.state.point = trace[0]
+                stress = trace[0]
+              }
+            }
+
             (this.slide < 0) && (this.slide = 0);
             (this.pos30 < 0) && (this.pos30 = 0);
             const translate = (s) => {
@@ -163,7 +182,7 @@ class Memory extends Component {
               this.midelement && this.pageelement.appendChild(this.midelement)
               this.downelement && this.pageelement.appendChild(this.downelement)
             }
-            first_render(parseInt(this.state.point / 16))
+            first_render(parseInt(this.slide / height) + 4)
             const render = (pos) => {
               let _p30 = pos ? parseInt(pos / height / 30) : parseInt(this.slide / height / 30)
               if (_p30 == this.pos30) {
@@ -200,29 +219,26 @@ class Memory extends Component {
             //events
 
             if (!this.pageel && el) {
-              {/*el.removeEventListener("mousewheel")*/}
-              el.addEventListener("mousewheel",(e) => {
+              el.onmousewheel = (e) => {
                 let t = (this.slide + e.deltaY) > 0 ? this.slide + e.deltaY : 0
                 translate(t)
                 this.slide = t
                 render()
-              })
-              {/*el.removeEventListener("touchmove")*/}
-              el.addEventListener("touchmove",(e) => {
+              }
+              el.ontouchmove = (e) => {
                 if (!this.movestart || isNaN(this.movestart)) {this.movestart = e.layerY}
                 let t = (this.slide + this.movestart - e.layerY) > 0 ? this.slide + this.movestart - e.layerY : 0
                 translate(t)
                 render(t)
-              })
-              {/*el.removeEventListener("touchend")*/}
-              el.addEventListener("touchend", (e) => {
+              }
+              el.ontouchend = (e) => {
                 if (!this.movestart || isNaN(this.movestart)) {this.movestart = e.layerY}
                 let t = (this.slide + this.movestart - e.layerY) > 0 ? this.slide + this.movestart - e.layerY : 0
                 this.pageelement.style.transform = `translate3d(0px, -${t}px, 0px)`
                 this.slide = t
                 render()
                 this.movestart = void(0)
-              })
+              }
             }
             this.pageel = el
           }}>
@@ -233,4 +249,15 @@ class Memory extends Component {
   }
 }
 
-export { Register, Memory }
+class Stack extends Component {
+  render() {
+    return <div style={this.props.frame}>{this.props.cpu.stack.map((el,i) => {
+      return <span className="stack-element" key={i}>{
+        el.type == "call" ?
+        "CALL" : padz(el.value,4)
+      }</span>
+    })}</div>
+  }
+}
+
+export { Register, Memory, Stack }

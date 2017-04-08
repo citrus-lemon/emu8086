@@ -1,3 +1,70 @@
 .codelist-space {
   overflow-y: scroll;
 }
+
+.code-line {
+  text-align: left;
+}
+
+.code-line > * {
+  padding-right: 10px;
+  min-width: 40px;
+  display: inline-block;
+}
+
+.code-line .args:not(:last-child):after {
+  content: ', ';
+}
+
+.control-block {
+  height: auto;
+  display: inline-block;
+  -webkit-box-align:center;
+  line-height: calc(75px - 30px);
+  padding: 15px 20px;
+}
+
+.control-button {
+  padding: 0px 20px;
+  margin: 20px;
+  height: calc(100% - 40px);
+  display: inline-block;
+  font-size: 16px;
+  border: none;
+  background: rgba(0, 0, 0, 0);
+}
+
+.control-button:hover {
+  /*color: #ccc;*/
+  box-shadow: inset 0 0 5px 0 rgba(30,30,30,0.40);
+  border-radius: 8px;
+}
+
+.control-button:active {
+  color: #888;
+  box-shadow: inset 0 0 8px 0 rgba(30,30,30,0.60);
+  border-radius: 8px;
+}
+
+.control-input {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.control-icon {
+  margin-right: 20px;
+}
+
+.debug-space > * {
+  line-height: calc(100% + 20px);
+}
+
+.screen {
+  text-align: left;
+  padding: 20px;
+  overflow: scroll;
+}
