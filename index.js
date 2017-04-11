@@ -1,6 +1,6 @@
 // emu8086 javascript version
 
 module.exports = {
-  CPU: require('./lib/core.js'),
-  debug: require('./lib/debug.js')
+  CPU: require('./lib/emulator/core.js'),
+  debug: require('./lib/emulator/debug.js')
 }
