@@ -46,7 +46,7 @@ the assembler is plan to assemble 8086 source code to binary code.
  - no different segment or more than one segments
  - bind to? `[CS, DS, ES, SS]`
 
-## implementation
+## Implementation
 
 ### segment
 
@@ -84,4 +84,58 @@ Syntax:
 
 `proc element` refer to a program procedure label or name
 
-###
+### expression
+
+in the memory element and immediate data element, simple expression can be used.
+
+operator:
+ - `!`, `+`, `-` unary operator
+ - `*`, `/`, `%` times, divide, mod
+ - `+`, `-` add, substract
+ - `and`
+ - `xor`
+ - `or`
+
+## Procedure
+
+ - assume segment
+ - read segment begin if segment exist
+ - link segment name to segment
+ - parse code but not assemble
+ - IR to binary
+ - output
+
+## Options
+
+
+## Regexp
+
+```ruby
+# assume segment
+  /assume (.*?)(?:;(.*?))?/i
+  # $1: arguments, $2: commentry
+  # commentry will be abandoned
+  $1.split(',') # array of segments define
+  /(.*?):(.*?)/
+  # $1: segment position [ DS,CS,ES,SS ], $2: segment name
+
+# commentry
+  /^((?:\'(?:(?:\\.)|[^\.])*?\'|[^;#])*)(?:[;#](.*))?$/
+  # $1: code, $2: commentry
+  # commentry will preserve
+
+# pesudo code
+  /^(?:\s*([\w\.]*):?\s+)*(segment|ends|db|dw)(?:\s+(.*?))?$/i
+  # $1: name, $2: code, $3: arguments
+
+# instruction code
+  /^(?:\s*([\w\.]+):)?\s*(?:([\w%]+)(?:\s+(.*?))?)?$/
+  # $1: label, $2: code, $3: arguments
+```
+
+## Code methods
+
+ - load code
+ - option
+ - exception dealing
+ - assemble procedure
