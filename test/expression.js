@@ -1,8 +1,8 @@
 const exp = require('../lib/assembler/expression.js')
 
-let formula = 'a*b+(e and his)+q'
+let formula = 'a*b+(e and .his)+q'
 let ans = exp.parse(formula)
-// console.log(ans.toString())
+console.log(ans.toString())
 
 ans = exp.parse(
   '12+4*c%2'
