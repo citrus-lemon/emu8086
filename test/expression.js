@@ -1,7 +1,8 @@
 const exp = require('../lib/assembler/expression.js')
 
-let formula = 'a*b+(e and .his)+q'
+let formula = ' - (3<<d)- bx + si'
 let ans = exp.parse(formula)
+console.log(ans)
 console.log(ans.toString())
 
 ans = exp.parse(
