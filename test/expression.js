@@ -9,4 +9,6 @@ ans = exp.parse(
   '12+4*c%2'
 )
 console.log(ans)
+console.log(ans.vaild())
+console.log(ans.vaild({c:7}))
 console.log(ans.calc({c:7}))

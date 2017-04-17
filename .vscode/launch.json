@@ -64,7 +64,7 @@
           "request": "launch",
           // "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/babel-node",
           "name": "test",
-          "program": "${workspaceRoot}/test/astest.js"
+          "program": "${workspaceRoot}/test/expression.js"
         }
     ]
 }
