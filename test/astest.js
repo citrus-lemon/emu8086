@@ -5,10 +5,10 @@ let assembler
 
 
 codeSource = `
-  assume cs:cseg,ds:dseg ; hello
-  mov ax,bx
+  mov ax,203h
 `
 
 assembler = new as().loadSource(codeSource)
 global.asm = assembler
 assembler.assemble()
+console.log(assembler.binary().map(e => e.toString(16)))
