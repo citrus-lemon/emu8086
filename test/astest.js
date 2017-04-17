@@ -5,7 +5,8 @@ let assembler
 
 
 codeSource = `
-  mov ax,203h
+  mov ax,302h
+  mov byte [0],3
 `
 
 assembler = new as().loadSource(codeSource)
