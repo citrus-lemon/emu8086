@@ -3,7 +3,7 @@ import './App.css';
 import { Register, Memory, Stack } from './Component';
 import { Debug, Codelist, Screen } from './Control';
 import {Title} from './Title';
-import {debug as core} from './concatenated.js';
+import {debug as core} from '../index.js';
 
 class App extends Component {
   constructor(props) {
