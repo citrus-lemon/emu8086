@@ -7,7 +7,8 @@ let assembler
 codeSource = `
   ;mov ax, byte [4]
   ;push es
-  pop byte ptrf[4]
+  ;pop byte [4]
+  MOV ax, [4]
 `
 
 assembler = new as().loadSource(codeSource)
