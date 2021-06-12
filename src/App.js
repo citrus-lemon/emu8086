@@ -4,7 +4,7 @@ import { Register, Memory, Stack } from './Component';
 import { Debug, Codelist, Screen } from './Control';
 import {Title} from './Title';
 import {debug as core} from './concatenated.js';
-
+/*eslint no-restricted-globals: ["error", "event", "fdescribe"]*/
 class App extends Component {
   constructor(props) {
     super(props)
@@ -24,6 +24,15 @@ class App extends Component {
         this.setState({current: this.steptimes})
       }
     }
+    const example = "gfwAAXQB9LwAELAuuwAAS4P7/3Xx6FEBQ3Xr6EsBMckJy3XicuDoQAG5AIA52XbW6DYBActyz+gvAQHbg9EAecVyw1GD4QF0vegdAVn5uwCAGdl1sXKv6A8B6AAAW4H7XQB1ooH8ABB1nOj8ALtyAFPDgfwAEHWO6O4AkJCQ6wH06PgAuMUB6MoA6O8AsDDo1wD+wDx/dfewI8cG0wGQAbFQ6MQA/sl1+YE+0wHgAXUKsVDHBtMBgAfr58cG0wHgAbES6KMA6KAAgwbTAUzomADolQD+yXXrxwbTATQCMcC6AQC5EQABwuifAFC4IADodwBYkkl178cG0wHUArkAAInI6D8A6IIAuCAA6FsAQYP5FHbsxwbTAXQDuwIAgI/VAQB1GYnY6GEAuCAA6DoAid+AjdUBAQHfg/9ldvRDg/tkdtr0icMx0gnbdAUBwkvr+YnQw1NSicOKF0OGwugJAIbCINJ18lpbw1NXuwCAiz7TAYgBR4k+0wFfW8OLPtMBg+9QefspPtMBw1NQszCD+Al2KoP4Y3YTg+hk/sOD+GN39obY6ML/htizMIP4CXYGg+gKQ+v1hsPorv+I2AQw6Kf/WFvDSGVsbG8sIHdvcmxkIQAAAA=="
+    let codearray = [...atob(example)].map(s => s.charCodeAt())
+    console.log("load example code")
+    this.refresh({
+      code: {
+        name: "codegolf.8086",
+        code: codearray
+      }
+    })
     top.screen = ''
     this.core.onevent('int',(s,c) => {
       switch (c) {
